@@ -11,10 +11,14 @@
     "version": "0.1.0"
   },
   "tauri": {
+    "macOSPrivateApi": true,
     "allowlist": {
       "all": false
     },
     "bundle": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
       "active": true,
       "category": "DeveloperTool",
       "copyright": "",
@@ -29,7 +33,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "spectrum.media",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -58,7 +62,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "spectrum",
+        "title": "Spectrum",
         "width": 800
       }
     ]

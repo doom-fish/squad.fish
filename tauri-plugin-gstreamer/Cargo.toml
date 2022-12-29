@@ -1,0 +1,20 @@
+[package]
+name = "tauri-plugin-gstreamer"
+version = "0.0.0"
+authors = [ "You" ]
+description = ""
+edition = "2021"
+rust-version = "1.66"
+
+
+[dependencies]
+tauri = { version = "1.2.3" }
+gst = { package = "gstreamer", version = "0.19.4" }
+gst-base = { package = "gstreamer-base", version = "0.19.3" }
+gst-video = { package = "gstreamer-video", version = "0.19.3" }
+objc = {version = "0.2.7"}
+cocoa = { version = "0.24.1"}
+
+
+[profile.dev]
+rpath = true

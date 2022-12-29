@@ -7,12 +7,13 @@ license = ""
 repository = ""
 default-run = "app"
 edition = "2021"
-rust-version = "1.59"
+rust-version = "1.66"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 tauri-build = { version = "1.2.1", features = [] }
+pkg-config = "0.3.26"
 
 [dependencies]
 serde_json = "1.0"

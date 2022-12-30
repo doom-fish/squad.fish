@@ -2604,6 +2604,7 @@ name = "tauri-plugin-gstreamer"
 version = "0.0.0"
 dependencies = [
  "cocoa",
+ "core-graphics",
  "gstreamer",
  "gstreamer-base",
  "gstreamer-video",

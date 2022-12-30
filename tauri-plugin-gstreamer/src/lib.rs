@@ -1,3 +1,8 @@
+use cocoa::{
+    appkit::{NSView, NSViewHeightSizable, NSViewWidthSizable},
+    base::{id, Nil},
+    foundation::{NSPoint, NSSize},
+};
 use gst::prelude::*;
 use gst_video::prelude::*;
 
@@ -27,6 +32,7 @@ impl<R: Runtime> Plugin<R> for GstreamerPlugin<R> {
     /// Callback invoked when the Window is created.
     fn created(&mut self, window: Window<R>) {
         gst::init().unwrap();
+
         let pipeline = gst::Pipeline::default();
         let src = gst::ElementFactory::make("videotestsrc").build().unwrap();
         let sink = gst::ElementFactory::make("glimagesink").build().unwrap();
@@ -50,9 +56,24 @@ impl<R: Runtime> Plugin<R> for GstreamerPlugin<R> {
                 if gst_video::is_video_overlay_prepare_window_handle_message(msg) {
                     #[cfg(target_os = "macos")]
                     unsafe {
-                        let ns_window = window.ns_window().unwrap() as cocoa::base::id;
-                        let content_view: usize = msg_send![ns_window, contentView];
-                        video_overlay.set_window_handle(content_view);
+                        let gstreamer_view_class = class!(NSView);
+                        let gst_view: id = msg_send![gstreamer_view_class, alloc];
+                        let window = window.ns_window().unwrap() as id;
+                        let content_view: id = msg_send![window, contentView];
+                        let s: id = msg_send![content_view, superview];
+                        let _: () = msg_send![gst_view, init];
+
+                        gst_view.setFrameOrigin(NSPoint::new(0., 0.));
+                        gst_view.setFrameSize(content_view.frame().size);
+                        gst_view.setAutoresizingMask_(NSViewHeightSizable | NSViewWidthSizable);
+                        let _: () = msg_send![
+                            s,
+                            addSubview: gst_view
+                            positioned: -1
+                            relativeTo: content_view
+                        ];
+
+                        video_overlay.set_window_handle(gst_view as usize);
                     }
                 }
             }

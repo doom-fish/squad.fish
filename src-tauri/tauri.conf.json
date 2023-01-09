@@ -7,7 +7,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "spectrum",
+    "productName": "squad.fish",
     "version": "0.1.0"
   },
   "tauri": {
@@ -33,7 +33,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "spectrum.media",
+      "identifier": "squad.fish",
       "longDescription": "",
       "macOS": {
         "entitlements": null,

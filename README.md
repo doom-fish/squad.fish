@@ -1,2 +1,3 @@
 # squad.fish
-Torrent media streaming client
+
+Product dev collaboration

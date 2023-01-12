@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Per Johansson <mail@perjohansson.net>"]
 repository = "https://github.com/doom-fish/squad.fish"
 description = "GStreamer Screen"
-
+rust-version = "1.63"
 
 
 [features]
@@ -14,14 +14,28 @@ capi = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-gst = { package = "gstreamer", version = "0.19.4" }
+gst = { package = "gstreamer", version = "0.19.5" }
 gst-base = { package = "gstreamer-base", version = "0.19.3" }
 once_cell = "1.17.0"
 
 [lib]
 name = "gstscreen"
-crate-type = ["staticlib", "cdylib","lib", "rlib"]
+crate-type = [ "cdylib", "rlib"]
 path = "src/lib.rs"
 
 [build-dependencies]
 gst-plugin-version-helper = "0.7.5"
+
+
+[package.metadata.capi]
+min_version = "0.8.0"
+
+[package.metadata.capi.header]
+enabled = false
+
+[package.metadata.capi.library]
+install_subdir = "gstreamer-1.0"
+versioning = false
+
+[package.metadata.capi.pkg_config]
+requires_private = "gstreamer-1.0, gstreamer-base-1.0, gstreamer-video-1.0, gobject-2.0, glib-2.0, gmodule-2.0"

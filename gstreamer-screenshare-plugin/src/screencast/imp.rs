@@ -18,7 +18,7 @@ use once_cell::sync::Lazy;
 
 static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
     gst::DebugCategory::new(
-        "gstscreen",
+        "screen",
         gst::DebugColorFlags::empty(),
         Some("Screencast Element"),
     )
@@ -105,7 +105,7 @@ impl Screencast {
 // up the class data
 #[glib::object_subclass]
 impl ObjectSubclass for Screencast {
-    const NAME: &'static str = "gstscreen";
+    const NAME: &'static str = "screen";
     type Type = super::Screencast;
     type ParentType = gst::Element;
 

@@ -9,7 +9,7 @@ rust-version = "1.66"
 
 [dependencies]
 tauri = { version = "1.2.3" }
-gst = { package = "gstreamer", version = "0.19.4" }
+gst = { package = "gstreamer", version = "0.19.5" }
 gst-base = { package = "gstreamer-base", version = "0.19.3" }
 gst-video = { package = "gstreamer-video", version = "0.19.3" }
 objc = {version = "0.2.7"}

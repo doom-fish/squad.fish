@@ -35,8 +35,9 @@ impl<R: Runtime> Plugin<R> for GstreamerPlugin<R> {
 
         let pipeline = gst::Pipeline::default();
         let src = gst::ElementFactory::make("videotestsrc").build().unwrap();
+        let screen = gst::ElementFactory::make("gstscreen").build().unwrap();
         let sink = gst::ElementFactory::make("glimagesink").build().unwrap();
-        pipeline.add_many(&[&src, &sink]).unwrap();
+        pipeline.add_many(&[&src, &screen, &sink]).unwrap();
         src.link(&sink).unwrap();
         let video_overlay = sink
             .clone()

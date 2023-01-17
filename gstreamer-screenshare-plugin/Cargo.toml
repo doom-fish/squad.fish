@@ -16,6 +16,7 @@ capi = []
 [dependencies]
 gst = { package = "gstreamer", version = "0.19.5" }
 gst-base = { package = "gstreamer-base", version = "0.19.3" }
+objc = "0.2.7"
 once_cell = "1.17.0"
 
 [lib]

@@ -1,21 +1,23 @@
-// Copyright (C) 2018 Sebastian Dröge <sebastian@centricular.com>
-//
-// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
-// option. This file may not be copied, modified, or distributed
-// except according to those terms.
-//
-// SPDX-License-Identifier: MIT OR Apache-2.0
+/*
+Copyright (C) 2018 Sebastian Dröge <sebastian@centricular.com>
+
+Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+<LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+option. This file may not be copied, modified, or distributed
+except according to those terms.
+
+SPDX-License-Identifier: MIT OR Apache-2.0
+*/
 
 use gst::glib;
 use gst::prelude::*;
 use gst::subclass::prelude::*;
+use gst::QueryRef;
 
 use once_cell::sync::Lazy;
 
 // This module contains the private implementation details of our element
-
 static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
     gst::DebugCategory::new(
         "screen",
@@ -27,76 +29,14 @@ static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
 // Struct containing all the element data
 pub struct Screencast {
     srcpad: gst::Pad,
-    sinkpad: gst::Pad,
 }
 
 impl Screencast {
-    // Called whenever a new buffer is passed to our sink pad. Here buffers should be processed and
-    // whenever some output buffer is available have to push it out of the source pad.
-    // Here we just pass through all buffers directly
-    //
-    // See the documentation of gst::Buffer and gst::BufferRef to see what can be done with
-    // buffers.
-    fn sink_chain(
-        &self,
-        pad: &gst::Pad,
-        buffer: gst::Buffer,
-    ) -> Result<gst::FlowSuccess, gst::FlowError> {
-        gst::log!(CAT, obj: pad, "Handling buffer {:?}", buffer);
-        self.srcpad.push(buffer)
+    fn src_event(self: &Self, _pad: &gst::Pad, _event: gst::Event) -> bool {
+        true
     }
-
-    // Called whenever an event arrives on the sink pad. It has to be handled accordingly and in
-    // most cases has to be either passed to Pad::event_default() on this pad for default handling,
-    // or Pad::push_event() on all pads with the opposite direction for direct forwarding.
-    // Here we just pass through all events directly to the source pad.
-    //
-    // See the documentation of gst::Event and gst::EventRef to see what can be done with
-    // events, and especially the gst::EventView type for inspecting events.
-    fn sink_event(&self, pad: &gst::Pad, event: gst::Event) -> bool {
-        gst::log!(CAT, obj: pad, "Handling event {:?}", event);
-        self.srcpad.push_event(event)
-    }
-
-    // Called whenever a query is sent to the sink pad. It has to be answered if the element can
-    // handle it, potentially by forwarding the query first to the peer pads of the pads with the
-    // opposite direction, or false has to be returned. Default handling can be achieved with
-    // Pad::query_default() on this pad and forwarding with Pad::peer_query() on the pads with the
-    // opposite direction.
-    // Here we just forward all queries directly to the source pad's peers.
-    //
-    // See the documentation of gst::Query and gst::QueryRef to see what can be done with
-    // queries, and especially the gst::QueryView type for inspecting and modifying queries.
-    fn sink_query(&self, pad: &gst::Pad, query: &mut gst::QueryRef) -> bool {
-        gst::log!(CAT, obj: pad, "Handling query {:?}", query);
-        self.srcpad.peer_query(query)
-    }
-
-    // Called whenever an event arrives on the source pad. It has to be handled accordingly and in
-    // most cases has to be either passed to Pad::event_default() on the same pad for default
-    // handling, or Pad::push_event() on all pads with the opposite direction for direct
-    // forwarding.
-    // Here we just pass through all events directly to the sink pad.
-    //
-    // See the documentation of gst::Event and gst::EventRef to see what can be done with
-    // events, and especially the gst::EventView type for inspecting events.
-    fn src_event(&self, pad: &gst::Pad, event: gst::Event) -> bool {
-        gst::log!(CAT, obj: pad, "Handling event {:?}", event);
-        self.sinkpad.push_event(event)
-    }
-
-    // Called whenever a query is sent to the source pad. It has to be answered if the element can
-    // handle it, potentially by forwarding the query first to the peer pads of the pads with the
-    // opposite direction, or false has to be returned. Default handling can be achieved with
-    // Pad::query_default() on this pad and forwarding with Pad::peer_query() on the pads with the
-    // opposite direction.
-    // Here we just forward all queries directly to the sink pad's peers.
-    //
-    // See the documentation of gst::Query and gst::QueryRef to see what can be done with
-    // queries, and especially the gst::QueryView type for inspecting and modifying queries.
-    fn src_query(&self, pad: &gst::Pad, query: &mut gst::QueryRef) -> bool {
-        gst::log!(CAT, obj: pad, "Handling query {:?}", query);
-        self.sinkpad.peer_query(query)
+    fn src_query(self: &Self, _pad: &gst::Pad, _query: &mut QueryRef) -> bool {
+        true
     }
 }
 
@@ -105,48 +45,13 @@ impl Screencast {
 // up the class data
 #[glib::object_subclass]
 impl ObjectSubclass for Screencast {
-    const NAME: &'static str = "screen";
+    const NAME: &'static str = "GstScreen";
     type Type = super::Screencast;
     type ParentType = gst::Element;
 
     // Called when a new instance is to be created. We need to return an instance
     // of our struct here and also get the class struct passed in case it's needed
     fn with_class(klass: &Self::Class) -> Self {
-        // Create our two pads from the templates that were registered with
-        // the class and set all the functions on them.
-        //
-        // Each function is wrapped in catch_panic_pad_function(), which will
-        // - Catch panics from the pad functions and instead of aborting the process
-        //   it will simply convert them into an error message and poison the element
-        //   instance
-        // - Extract our Screencast struct from the object instance and pass it to us
-        //
-        // Details about what each function is good for is next to each function definition
-        let templ = klass.pad_template("sink").unwrap();
-        let sinkpad = gst::Pad::builder_with_template(&templ, Some("sink"))
-            .chain_function(|pad, parent, buffer| {
-                Screencast::catch_panic_pad_function(
-                    parent,
-                    || Err(gst::FlowError::Error),
-                    |screencast| screencast.sink_chain(pad, buffer),
-                )
-            })
-            .event_function(|pad, parent, event| {
-                Screencast::catch_panic_pad_function(
-                    parent,
-                    || false,
-                    |screencast| screencast.sink_event(pad, event),
-                )
-            })
-            .query_function(|pad, parent, query| {
-                Screencast::catch_panic_pad_function(
-                    parent,
-                    || false,
-                    |screencast| screencast.sink_query(pad, query),
-                )
-            })
-            .build();
-
         let templ = klass.pad_template("src").unwrap();
         let srcpad = gst::Pad::builder_with_template(&templ, Some("src"))
             .event_function(|pad, parent, event| {
@@ -164,11 +69,11 @@ impl ObjectSubclass for Screencast {
                 )
             })
             .build();
-
+            srcpad.push(buffer)
         // Return an instance of our struct and also include our debug category here.
         // The debug category will be used later whenever we need to put something
         // into the debug logs
-        Self { srcpad, sinkpad }
+        Self { srcpad }
     }
 }
 
@@ -182,7 +87,7 @@ impl ObjectImpl for Screencast {
         // Here we actually add the pads we created in Screencast::new() to the
         // element so that GStreamer is aware of their existence.
         let obj = self.obj();
-        obj.add_pad(&self.sinkpad).unwrap();
+
         obj.add_pad(&self.srcpad).unwrap();
     }
 }
@@ -226,15 +131,7 @@ impl ElementImpl for Screencast {
             )
             .unwrap();
 
-            let sink_pad_template = gst::PadTemplate::new(
-                "sink",
-                gst::PadDirection::Sink,
-                gst::PadPresence::Always,
-                &caps,
-            )
-            .unwrap();
-
-            vec![src_pad_template, sink_pad_template]
+            vec![src_pad_template]
         });
 
         PAD_TEMPLATES.as_ref()

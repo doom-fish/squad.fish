@@ -72,6 +72,8 @@ impl Builder {
             &format!("@import {};", self.framework),
         );
 
+        builder = builder.generate_block(true);
+
         builder
     }
 

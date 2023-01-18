@@ -17,6 +17,7 @@ version = "0.1.3"
 dependencies = [
  "apple-sdk",
  "bindgen",
+ "block",
  "clap",
  "derive_more",
  "serde",
@@ -182,6 +183,7 @@ dependencies = [
 name = "doom-capture"
 version = "0.1.0"
 dependencies = [
+ "block",
  "objc",
  "screencapturekit-sys",
 ]

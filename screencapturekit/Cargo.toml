@@ -1,11 +1,12 @@
 [package]
-name = "doom-capture"
+name = "screencapturekit"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-block = "0.1.6"
 objc = "0.2.7"
-screencapturekit-sys = {path = "../screencapturekit-sys"}
+objc_id = "0.1.1"
+block = "0.1.0"
+

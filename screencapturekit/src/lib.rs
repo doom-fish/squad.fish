@@ -9,7 +9,8 @@ pub struct SCShareableContent {}
 
 impl SCShareableContent {
     pub fn get_with_completion_handler(completion_handler: fn(Result<SCShareableContent, Error>)) {
-        let completion_handler_block = ConcreteBlock::new(|_sc: Id<Object>, _error: Id<Object>| {});
+        let _completion_handler_block =
+            ConcreteBlock::new(|_sc: Id<Object>, _error: Id<Object>| {});
         let _: Id<Object> = unsafe { msg_send![class!(SCShareableContent), alloc] };
         completion_handler(Ok(SCShareableContent {}))
     }

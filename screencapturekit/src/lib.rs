@@ -1,6 +1,6 @@
-use block::ConcreteBlock;
 use objc::{runtime::Object, *};
 use objc_id::Id;
+
 pub enum Error {
     SharableContentError,
 }
@@ -8,11 +8,8 @@ pub enum Error {
 pub struct SCShareableContent {}
 
 impl SCShareableContent {
-    pub fn get_with_completion_handler(completion_handler: fn(Result<SCShareableContent, Error>)) {
-        let _completion_handler_block =
-            ConcreteBlock::new(|_sc: Id<Object>, _error: Id<Object>| {});
+    pub fn get_with_compeletion_handler() {
         let _: Id<Object> = unsafe { msg_send![class!(SCShareableContent), alloc] };
-        completion_handler(Ok(SCShareableContent {}))
     }
 }
 
@@ -21,6 +18,6 @@ mod tests {
     use super::*;
     #[test]
     fn test_get_with_completion_handler() {
-        SCShareableContent::get_with_completion_handler(|_: Result<SCShareableContent, Error>| {});
+        SCShareableContent::get_with_compeletion_handler();
     }
 }

@@ -9,6 +9,8 @@ struct NSError(IdPtr);
 
 pub struct SCShareableContent(Id<Object>);
 
+pub struct SCWindow(Id<Object>);
+
 impl SCShareableContent {
     pub fn get() -> Result<Self, RecvError> {
         let (tx, rx) = channel();
@@ -26,8 +28,8 @@ impl SCShareableContent {
         };
         rx.recv()
     }
-    pub fn windows(&self) -> IdPtr {
-        unsafe { msg_send!(self.0, windows) }
+    pub fn windows(&self) -> Vec<SCWindow> {
+        unsafe { vec![SCWindow(Id::from_ptr(msg_send!(self.0, windows)))] }
     }
 }
 

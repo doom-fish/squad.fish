@@ -18,11 +18,11 @@ impl SCShareableContent {
             tx.send(SCShareableContent(sc_id)).expect("Should work!");
         });
 
-        let _: () = unsafe {
-            msg_send![
+        unsafe {
+            let _: () = msg_send![
                 class!(SCShareableContent),
                 getShareableContentWithCompletionHandler: &*handler.clone()
-            ]
+            ];
         };
         rx.recv()
     }
@@ -36,7 +36,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_get() {
-       let sc = SCShareableContent::get().unwrap();
+        let sc = SCShareableContent::get().unwrap();
         sc.windows();
     }
 }

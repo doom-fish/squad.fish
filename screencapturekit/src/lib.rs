@@ -9,7 +9,11 @@ struct NSError(IdPtr);
 
 pub struct SCShareableContent(Id<Object>);
 
-pub struct SCWindow(Id<Object>);
+pub struct SCWindow<'a> {
+    ptr: Id<Object>,
+    pub name: &'a str,
+    pub id: usize,
+}
 
 impl SCShareableContent {
     pub fn get() -> Result<Self, RecvError> {
@@ -29,7 +33,11 @@ impl SCShareableContent {
         rx.recv()
     }
     pub fn windows(&self) -> Vec<SCWindow> {
-        unsafe { vec![SCWindow(Id::from_ptr(msg_send!(self.0, windows)))] }
+        unsafe {
+            vec![SCWPickersActionBarindow(Id::from_ptr(msg_send!(
+                self.0, windows
+            )))]
+        }
     }
 }
 

@@ -68,7 +68,6 @@ impl RawSCRunnableApplication {
     fn get_process_id(&self) -> isize {
         unsafe { msg_send![self, processID] }
     }
-
     fn get_application_name(&self) -> Option<&str> {
         unsafe { get_string!(self, applicationName) }
     }
@@ -90,7 +89,6 @@ impl RawSCWindow {
     fn get_window_id(&self) -> WindowID {
         unsafe { msg_send![self, windowID] }
     }
-
     fn get_title(&self) -> Option<&str> {
         unsafe { get_string!(self, title) }
     }

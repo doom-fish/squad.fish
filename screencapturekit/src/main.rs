@@ -1,0 +1,44 @@
+use screencapturekit::SCShareableContent;
+
+fn main() {
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+    SCShareableContent::get();
+}

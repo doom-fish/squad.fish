@@ -28,7 +28,7 @@ pub struct Rect {
     size: Size,
 }
 
-pub struct SCRunnableApplication<'a> {
+pub struct SCRunningApplication<'a> {
     process_id: isize,
     bundle_identifier: &'a str,
     application_name: &'a str,
@@ -37,7 +37,7 @@ pub struct SCRunnableApplication<'a> {
 pub struct SCWindow<'a> {
     ptr: Id<Object>,
     pub title: Option<&'a str>,
-    pub owning_application: Option<&'a SCRunnableApplication<'a>>,
+    pub owning_application: Option<&'a SCRunningApplication<'a>>,
     pub id: WindowID,
     pub window_layer: u32,
     pub is_active: bool,
@@ -49,8 +49,8 @@ pub struct SCDisplay {
     pub width: u64,
     pub height: u64,
 }
-struct RawSCRunnableApplication;
-unsafe impl Message for RawSCRunnableApplication {}
+struct RawSCRunningApplication;
+unsafe impl Message for RawSCRunningApplication {}
 
 macro_rules! get_string {
     // The `expr` designator is used for expressions.
@@ -64,7 +64,7 @@ macro_rules! get_string {
     }};
 }
 
-impl RawSCRunnableApplication {
+impl RawSCRunningApplication {
     fn get_process_id(&self) -> isize {
         unsafe { msg_send![self, processID] }
     }
@@ -76,11 +76,17 @@ impl RawSCRunnableApplication {
     }
 }
 
+impl INSObject for RawSCRunningApplication {
+    fn class() -> &'static runtime::Class {
+        Class::get("SCRunningApplication")
+            .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
+    }
+}
 struct RawSCWindow;
 unsafe impl Message for RawSCWindow {}
 
 impl RawSCWindow {
-    fn get_owning_application(&self) -> Id<RawSCRunnableApplication> {
+    fn get_owning_application(&self) -> Id<RawSCRunningApplication> {
         unsafe { Id::from_ptr(msg_send![self, owningApplication]) }
     }
     fn get_window_layer(&self) -> u32 {
@@ -103,7 +109,7 @@ impl INSObject for RawSCWindow {
 struct RawSCShareableContent;
 unsafe impl Message for RawSCShareableContent {}
 impl RawSCShareableContent {
-    pub fn get() -> Result<Id<Self>, RecvError> {
+    fn get() -> Result<Id<Self>, RecvError> {
         let (tx, rx) = channel();
 
         unsafe {
@@ -118,27 +124,43 @@ impl RawSCShareableContent {
 
         rx.recv()
     }
-    pub fn windows(&self) -> Vec<SCWindow> {
+    fn applications(&self) -> Vec<Id<RawSCRunningApplication>> {
+        let win_array_ptr: Id<NSArray<RawSCRunningApplication>> =
+            unsafe { Id::from_ptr(msg_send!(self, applications)) };
+
+        INSArray::into_vec(win_array_ptr)
+    }
+    fn windows(&self) -> Vec<Id<RawSCWindow>> {
         let win_array_ptr: Id<NSArray<RawSCWindow>> =
             unsafe { Id::from_ptr(msg_send!(self, windows)) };
-        for (_, w) in win_array_ptr.object_enumerator().enumerate() {
-            println!(
-                "www {}",
-                w.get_owning_application()
-                    .get_application_name()
-                    .unwrap_or("NONE")
-            );
-        }
-        vec![]
+
+        INSArray::into_vec(win_array_ptr)
     }
 }
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     #[test]
-    fn test_get() {
-        let sc = RawSCShareableContent::get().unwrap();
-        sc.windows();
+    fn test_get_windows() {
+        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        for w in sc.windows().iter() {
+            assert!(
+                w.get_title().is_some() || w.get_title().is_none(),
+                "Can get title"
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_applications() {
+        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        for a in sc.applications().iter() {
+            assert!(
+                a.get_application_name().is_some() || a.get_application_name().is_none(),
+                "Can get application_name"
+            );
+        }
     }
 }

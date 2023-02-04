@@ -125,16 +125,16 @@ impl RawSCShareableContent {
         rx.recv()
     }
     fn applications(&self) -> Vec<Id<RawSCRunningApplication>> {
-        let win_array_ptr: Id<NSArray<RawSCRunningApplication>> =
+        let applications_ptr: Id<NSArray<RawSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
-        INSArray::into_vec(win_array_ptr)
+        INSArray::into_vec(applications_ptr)
     }
     fn windows(&self) -> Vec<Id<RawSCWindow>> {
-        let win_array_ptr: Id<NSArray<RawSCWindow>> =
+        let windows_ptr: Id<NSArray<RawSCWindow>> =
             unsafe { Id::from_ptr(msg_send!(self, windows)) };
 
-        INSArray::into_vec(win_array_ptr)
+        INSArray::into_vec(windows_ptr)
     }
 }
 

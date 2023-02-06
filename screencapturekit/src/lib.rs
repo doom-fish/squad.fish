@@ -133,20 +133,65 @@ impl INSObject for RawSCDisplay {
             .expect("Missing SCWindow class, check that the binary is linked with ScreenCaptureKit")
     }
 }
+
+enum OnScreenOnlySettings<'a> {
+    Every,
+    Above(&'a RawSCWindow),
+    Below(&'a RawSCWindow),
+}
+
+struct ExcludingDesktopWindowsConfig<'a> {
+    exclude_desktop_windows: bool,
+    on_screen_windows_only: Option<OnScreenOnlySettings<'a>>,
+}
+
 struct RawSCShareableContent;
 unsafe impl Message for RawSCShareableContent {}
 impl RawSCShareableContent {
-    fn get() -> Result<Id<Self>, RecvError> {
+    fn get(config: Option<ExcludingDesktopWindowsConfig>) -> Result<Id<Self>, RecvError> {
         let (tx, rx) = channel();
 
         unsafe {
             let handler = ConcreteBlock::new(move |sc: *mut RawSCShareableContent, _: NSError| {
                 tx.send(Id::from_ptr(sc)).expect("Should work!");
             });
-            let _: () = msg_send![
-                class!(SCShareableContent),
-                getShareableContentWithCompletionHandler: &*handler.copy()
-            ];
+            let _: () = if let Some(c) = config {
+                if let Some(only_screen) = c.on_screen_windows_only {
+                    match only_screen {
+                        OnScreenOnlySettings::Every => msg_send![
+                            class!(SCShareableContent),
+                            getShareableContentExcludingDesktopWindows: c.exclude_desktop_windows as u8
+                            onScreenWindowsOnly: 1
+                            completionHandler: &*handler.copy()
+                        ],
+
+                        OnScreenOnlySettings::Above(ref w) => msg_send![
+                            class!(SCShareableContent),
+                            getShareableContentExcludingDesktopWindows: c.exclude_desktop_windows as u8
+                            onScreenWindowsOnlyAboveWindow: &w
+                            completionHandler: &*handler.copy()
+                        ],
+                        OnScreenOnlySettings::Below(ref w) => msg_send![
+                            class!(SCShareableContent),
+                            getShareableContentExcludingDesktopWindows: c.exclude_desktop_windows as u8
+                            onScreenWindowsOnlyBelowWindow: &w
+                            completionHandler: &*handler.copy()
+                        ],
+                    }
+                } else {
+                    msg_send![
+                        class!(SCShareableContent),
+                        getShareableContentExcludingDesktopWindows: c.exclude_desktop_windows as u8
+                        onScreenWindowsOnly: 0
+                        completionHandler: &*handler.copy()
+                    ]
+                }
+            } else {
+                msg_send![
+                    class!(SCShareableContent),
+                    getShareableContentWithCompletionHandler: &*handler.copy()
+                ]
+            };
         };
 
         rx.recv()
@@ -178,7 +223,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_get_windows() {
-        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        let sc = RawSCShareableContent::get(None).expect("Should be able to get sharable content");
         for w in sc.windows().iter() {
             assert!(
                 w.get_title().is_some() || w.get_title().is_none(),
@@ -189,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_get_displays() {
-        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        let sc = RawSCShareableContent::get(None).expect("Should be able to get sharable content");
         for d in sc.displays().iter() {
             println!("frame: {:?}", d.get_frame());
             assert!(d.get_frame().size.width > 0f64, "Can get application_name");
@@ -197,7 +242,7 @@ mod tests {
     }
     #[test]
     fn test_get_applications() {
-        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        let sc = RawSCShareableContent::get(None).expect("Should be able to get sharable content");
         for a in sc.applications().iter() {
             assert!(
                 a.get_application_name().is_some() || a.get_application_name().is_none(),

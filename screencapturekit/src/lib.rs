@@ -13,16 +13,18 @@ type DisplayID = u32;
 
 struct NSError;
 
+#[derive(Debug)]
 pub struct Size {
     width: f64,
     height: f64,
 }
 
+#[derive(Debug)]
 pub struct Point {
     x: f64,
     y: f64,
 }
-
+#[derive(Debug)]
 pub struct Rect {
     origin: Point,
     size: Size,
@@ -106,6 +108,31 @@ impl INSObject for RawSCWindow {
             .expect("Missing SCWindow class, check that the binary is linked with ScreenCaptureKit")
     }
 }
+
+struct RawSCDisplay;
+unsafe impl Message for RawSCDisplay {}
+
+impl RawSCDisplay {
+    fn get_display_id(&self) -> DisplayID {
+        unsafe { msg_send![self, displayID] }
+    }
+    fn get_frame(&self) -> Rect {
+        unsafe { msg_send![self, frame] }
+    }
+    fn get_height(&self) -> u32 {
+        unsafe { msg_send![self, height] }
+    }
+    fn get_width(&self) -> u32 {
+        unsafe { msg_send![self, width] }
+    }
+}
+
+impl INSObject for RawSCDisplay {
+    fn class() -> &'static runtime::Class {
+        Class::get("SCDisplay")
+            .expect("Missing SCWindow class, check that the binary is linked with ScreenCaptureKit")
+    }
+}
 struct RawSCShareableContent;
 unsafe impl Message for RawSCShareableContent {}
 impl RawSCShareableContent {
@@ -123,6 +150,13 @@ impl RawSCShareableContent {
         };
 
         rx.recv()
+    }
+
+    fn displays(&self) -> Vec<Id<RawSCDisplay>> {
+        let display_ptr: Id<NSArray<RawSCDisplay>> =
+            unsafe { Id::from_ptr(msg_send!(self, displays)) };
+
+        INSArray::into_vec(display_ptr)
     }
     fn applications(&self) -> Vec<Id<RawSCRunningApplication>> {
         let applications_ptr: Id<NSArray<RawSCRunningApplication>> =
@@ -153,6 +187,14 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_get_displays() {
+        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        for d in sc.displays().iter() {
+            println!("frame: {:?}", d.get_frame());
+            assert!(d.get_frame().size.width > 0f64, "Can get application_name");
+        }
+    }
     #[test]
     fn test_get_applications() {
         let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");

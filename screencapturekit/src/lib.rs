@@ -51,8 +51,8 @@ pub struct SCDisplay {
     pub width: u64,
     pub height: u64,
 }
-struct RawSCRunningApplication;
-unsafe impl Message for RawSCRunningApplication {}
+struct UnsafeSCRunningApplication;
+unsafe impl Message for UnsafeSCRunningApplication {}
 
 macro_rules! get_string {
     // The `expr` designator is used for expressions.
@@ -66,7 +66,7 @@ macro_rules! get_string {
     }};
 }
 
-impl RawSCRunningApplication {
+impl UnsafeSCRunningApplication {
     fn get_process_id(&self) -> isize {
         unsafe { msg_send![self, processID] }
     }
@@ -78,17 +78,17 @@ impl RawSCRunningApplication {
     }
 }
 
-impl INSObject for RawSCRunningApplication {
+impl INSObject for UnsafeSCRunningApplication {
     fn class() -> &'static runtime::Class {
         Class::get("SCRunningApplication")
             .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
     }
 }
-struct RawSCWindow;
-unsafe impl Message for RawSCWindow {}
+struct UnsafeSCWindow;
+unsafe impl Message for UnsafeSCWindow {}
 
-impl RawSCWindow {
-    fn get_owning_application(&self) -> Id<RawSCRunningApplication> {
+impl UnsafeSCWindow {
+    fn get_owning_application(&self) -> Id<UnsafeSCRunningApplication> {
         unsafe { Id::from_ptr(msg_send![self, owningApplication]) }
     }
     fn get_window_layer(&self) -> u32 {
@@ -102,17 +102,17 @@ impl RawSCWindow {
     }
 }
 
-impl INSObject for RawSCWindow {
+impl INSObject for UnsafeSCWindow {
     fn class() -> &'static runtime::Class {
         Class::get("SCWindow")
             .expect("Missing SCWindow class, check that the binary is linked with ScreenCaptureKit")
     }
 }
 
-struct RawSCDisplay;
-unsafe impl Message for RawSCDisplay {}
+struct UnsafeSCDisplay;
+unsafe impl Message for UnsafeSCDisplay {}
 
-impl RawSCDisplay {
+impl UnsafeSCDisplay {
     fn get_display_id(&self) -> DisplayID {
         unsafe { msg_send![self, displayID] }
     }
@@ -127,7 +127,7 @@ impl RawSCDisplay {
     }
 }
 
-impl INSObject for RawSCDisplay {
+impl INSObject for UnsafeSCDisplay {
     fn class() -> &'static runtime::Class {
         Class::get("SCDisplay")
             .expect("Missing SCWindow class, check that the binary is linked with ScreenCaptureKit")
@@ -139,8 +139,8 @@ enum OnScreenOnlySettings<'a> {
     EveryWindow,
     #[default]
     OnlyOnScreen,
-    AboveWindow(&'a RawSCWindow),
-    BelowWindow(&'a RawSCWindow),
+    AboveWindow(&'a UnsafeSCWindow),
+    BelowWindow(&'a UnsafeSCWindow),
 }
 #[derive(Default)]
 struct ExcludingDesktopWindowsConfig<'a> {
@@ -148,10 +148,10 @@ struct ExcludingDesktopWindowsConfig<'a> {
     on_screen_windows_only: OnScreenOnlySettings<'a>,
 }
 
-struct RawSCShareableContent;
-unsafe impl Message for RawSCShareableContent {}
-type CompletionHandlerBlock = RcBlock<(*mut RawSCShareableContent, NSError), ()>;
-impl RawSCShareableContent {
+struct UnsafeSCShareableContent;
+unsafe impl Message for UnsafeSCShareableContent {}
+type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, NSError), ()>;
+impl UnsafeSCShareableContent {
     unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |sc: *mut Self, _: NSError| {
@@ -205,20 +205,20 @@ impl RawSCShareableContent {
         }
     }
 
-    fn displays(&self) -> Vec<Id<RawSCDisplay>> {
-        let display_ptr: Id<NSArray<RawSCDisplay>> =
+    fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
+        let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
             unsafe { Id::from_ptr(msg_send!(self, displays)) };
 
         INSArray::into_vec(display_ptr)
     }
-    fn applications(&self) -> Vec<Id<RawSCRunningApplication>> {
-        let applications_ptr: Id<NSArray<RawSCRunningApplication>> =
+    fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
+        let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
         INSArray::into_vec(applications_ptr)
     }
-    fn windows(&self) -> Vec<Id<RawSCWindow>> {
-        let windows_ptr: Id<NSArray<RawSCWindow>> =
+    fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
+        let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
             unsafe { Id::from_ptr(msg_send!(self, windows)) };
 
         INSArray::into_vec(windows_ptr)
@@ -232,14 +232,14 @@ mod get_shareable_content_with_config {
     fn get_exclude_desktop_windows() {
         let mut config = ExcludingDesktopWindowsConfig::default();
 
-        let _ = RawSCShareableContent::get_with_config(&config);
+        let _ = UnsafeSCShareableContent::get_with_config(&config);
 
         config.exclude_desktop_windows = true;
-        let _ = RawSCShareableContent::get_with_config(&config);
+        let _ = UnsafeSCShareableContent::get_with_config(&config);
         
         config.exclude_desktop_windows = true;
         config.on_screen_windows_only = OnScreenOnlySettings::EveryWindow;
-        let _ = RawSCShareableContent::get_with_config(&config); 
+        let _ = UnsafeSCShareableContent::get_with_config(&config); 
     }
 }
 #[cfg(test)]
@@ -248,7 +248,7 @@ mod get_shareable_content {
     use super::*;
     #[test]
     fn test_get_windows() {
-        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        let sc = UnsafeSCShareableContent::get().expect("Should be able to get sharable content");
         for w in sc.windows().iter() {
             assert!(
                 w.get_title().is_some() || w.get_title().is_none(),
@@ -259,7 +259,7 @@ mod get_shareable_content {
 
     #[test]
     fn test_get_displays() {
-        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        let sc = UnsafeSCShareableContent::get().expect("Should be able to get sharable content");
         for d in sc.displays().iter() {
             println!("frame: {:?}", d.get_frame());
             assert!(d.get_frame().size.width > 0f64, "Can get application_name");
@@ -267,7 +267,7 @@ mod get_shareable_content {
     }
     #[test]
     fn test_get_applications() {
-        let sc = RawSCShareableContent::get().expect("Should be able to get sharable content");
+        let sc = UnsafeSCShareableContent::get().expect("Should be able to get sharable content");
         for a in sc.applications().iter() {
             assert!(
                 a.get_application_name().is_some() || a.get_application_name().is_none(),

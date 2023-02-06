@@ -135,14 +135,15 @@ impl INSObject for RawSCDisplay {
 }
 
 enum OnScreenOnlySettings<'a> {
-    Every,
-    Above(&'a RawSCWindow),
-    Below(&'a RawSCWindow),
+    EveryWindow,
+    OnlyOnScreen,
+    AboveWindow(&'a RawSCWindow),
+    BelowWindow(&'a RawSCWindow),
 }
 
 struct ExcludingDesktopWindowsConfig<'a> {
     exclude_desktop_windows: bool,
-    on_screen_windows_only: Option<OnScreenOnlySettings<'a>>,
+    on_screen_windows_only: OnScreenOnlySettings<'a>,
 }
 
 struct RawSCShareableContent;
@@ -161,29 +162,29 @@ impl RawSCShareableContent {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             match config.on_screen_windows_only {
-                Some(OnScreenOnlySettings::Every) => msg_send![
+                OnScreenOnlySettings::EveryWindow => msg_send![
                     class!(SCShareableContent),
                     getShareableContentExcludingDesktopWindows: config.exclude_desktop_windows as u8
-                    onScreenWindowsOnly: 1
+                    onScreenWindowsOnly: 0
                     completionHandler: handler
                 ],
 
-                Some(OnScreenOnlySettings::Above(ref w)) => msg_send![
+                OnScreenOnlySettings::AboveWindow(ref w) => msg_send![
                     class!(SCShareableContent),
                     getShareableContentExcludingDesktopWindows: config.exclude_desktop_windows as u8
                     onScreenWindowsOnlyAboveWindow: &w
                     completionHandler: handler
                 ],
-                Some(OnScreenOnlySettings::Below(ref w)) => msg_send![
+                OnScreenOnlySettings::BelowWindow(ref w) => msg_send![
                     class!(SCShareableContent),
                     getShareableContentExcludingDesktopWindows: config.exclude_desktop_windows as u8
                     onScreenWindowsOnlyBelowWindow: &w
                     completionHandler: handler
                 ],
-                None => msg_send![
+                OnScreenOnlySettings::OnlyOnScreen => msg_send![
                     class!(SCShareableContent),
                     getShareableContentExcludingDesktopWindows: config.exclude_desktop_windows as u8
-                    onScreenWindowsOnly: 0
+                    onScreenWindowsOnly: 1
                     completionHandler: handler
                 ],
             }
@@ -223,7 +224,7 @@ impl RawSCShareableContent {
 }
 
 #[cfg(test)]
-mod tests {
+mod get_shareable_content {
 
     use super::*;
     #[test]

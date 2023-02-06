@@ -134,13 +134,15 @@ impl INSObject for RawSCDisplay {
     }
 }
 
+#[derive(Default)]
 enum OnScreenOnlySettings<'a> {
     EveryWindow,
+    #[default]
     OnlyOnScreen,
     AboveWindow(&'a RawSCWindow),
     BelowWindow(&'a RawSCWindow),
 }
-
+#[derive(Default)]
 struct ExcludingDesktopWindowsConfig<'a> {
     exclude_desktop_windows: bool,
     on_screen_windows_only: OnScreenOnlySettings<'a>,
@@ -158,7 +160,7 @@ impl RawSCShareableContent {
         (handler.copy(), rx)
     }
 
-    fn get_with_config(config: ExcludingDesktopWindowsConfig) -> Result<Id<Self>, RecvError> {
+    fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             match config.on_screen_windows_only {
@@ -223,6 +225,23 @@ impl RawSCShareableContent {
     }
 }
 
+#[cfg(test)]
+mod get_shareable_content_with_config {
+    use super::*;
+    #[test]
+    fn get_exclude_desktop_windows() {
+        let mut config = ExcludingDesktopWindowsConfig::default();
+
+        let _ = RawSCShareableContent::get_with_config(&config);
+
+        config.exclude_desktop_windows = true;
+        let _ = RawSCShareableContent::get_with_config(&config);
+        
+        config.exclude_desktop_windows = true;
+        config.on_screen_windows_only = OnScreenOnlySettings::EveryWindow;
+        let _ = RawSCShareableContent::get_with_config(&config); 
+    }
+}
 #[cfg(test)]
 mod get_shareable_content {
 

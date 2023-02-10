@@ -1,8 +1,10 @@
-
 use objc::runtime::Object;
 use objc_id::Id;
 
 use crate::shared::*;
+
+use crate::shared::{DisplayID, Rect, WindowID};
+use crate::sys::UnsafeSCShareableContent;
 
 pub struct SCRunningApplication<'a> {
     process_id: isize,
@@ -25,3 +27,12 @@ pub struct SCDisplay {
     pub width: u64,
     pub height: u64,
 }
+
+pub struct SCShareableContent<'a> {
+    pub windows: &'a [SCWindow<'a>],
+    pub applications: &'a [SCRunningApplication<'a>],
+    pub displays: &'a [SCDisplay],
+}
+
+impl SCShareableContent<'_> {
+} 

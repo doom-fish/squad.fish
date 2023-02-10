@@ -1,13 +1,17 @@
-
-use block::{ConcreteBlock, RcBlock};
-use objc::{runtime::{Class, Object}, *};
-use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
-use objc_id::Id;
 use std::sync::mpsc::{channel, Receiver, RecvError};
 
-use crate::shared::{WindowID, DisplayID, Rect};
+use block::{ConcreteBlock, RcBlock};
+use objc::{
+    msg_send,
+    runtime::{Class, Object},
+    Message, *,
+};
+use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
+use objc_id::*;
 
-struct UnsafeSCRunningApplication;
+use crate::shared::{DisplayID, Rect, WindowID};
+
+pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}
 
 macro_rules! get_string {
@@ -35,12 +39,12 @@ impl UnsafeSCRunningApplication {
 }
 
 impl INSObject for UnsafeSCRunningApplication {
-    fn class() -> &'static runtime::Class {
+    fn class() -> &'static Class {
         Class::get("SCRunningApplication")
-            .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
+                .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
     }
 }
-struct UnsafeSCWindow;
+pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 
 impl UnsafeSCWindow {
@@ -65,20 +69,20 @@ impl INSObject for UnsafeSCWindow {
     }
 }
 
-struct UnsafeSCDisplay;
+pub struct UnsafeSCDisplay;
 unsafe impl Message for UnsafeSCDisplay {}
 
 impl UnsafeSCDisplay {
-    fn get_display_id(&self) -> DisplayID {
+    pub fn get_display_id(&self) -> DisplayID {
         unsafe { msg_send![self, displayID] }
     }
-    fn get_frame(&self) -> Rect {
+    pub fn get_frame(&self) -> Rect {
         unsafe { msg_send![self, frame] }
     }
-    fn get_height(&self) -> u32 {
+    pub fn get_height(&self) -> u32 {
         unsafe { msg_send![self, height] }
     }
-    fn get_width(&self) -> u32 {
+    pub fn get_width(&self) -> u32 {
         unsafe { msg_send![self, width] }
     }
 }
@@ -91,7 +95,7 @@ impl INSObject for UnsafeSCDisplay {
 }
 
 #[derive(Default)]
-enum OnScreenOnlySettings<'a> {
+pub enum OnScreenOnlySettings<'a> {
     EveryWindow,
     #[default]
     OnlyOnScreen,
@@ -99,16 +103,16 @@ enum OnScreenOnlySettings<'a> {
     BelowWindow(&'a UnsafeSCWindow),
 }
 #[derive(Default)]
-struct ExcludingDesktopWindowsConfig<'a> {
+pub struct ExcludingDesktopWindowsConfig<'a> {
     exclude_desktop_windows: bool,
     on_screen_windows_only: OnScreenOnlySettings<'a>,
 }
 
-struct UnsafeSCShareableContent;
+pub struct UnsafeSCShareableContent;
 unsafe impl Message for UnsafeSCShareableContent {}
 type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Object), ()>;
 impl UnsafeSCShareableContent {
-    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
+    pub unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |sc: *mut Self, _error: *mut Object| {
             tx.send(Id::from_ptr(sc)).expect("Should work!");
@@ -116,7 +120,7 @@ impl UnsafeSCShareableContent {
         (handler.copy(), rx)
     }
 
-    fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self>, RecvError> {
+    pub fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             match config.on_screen_windows_only {
@@ -149,7 +153,7 @@ impl UnsafeSCShareableContent {
             rx.recv()
         }
     }
-    fn get() -> Result<Id<Self>, RecvError> {
+    pub fn get() -> Result<Id<Self>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             let _: () = msg_send![
@@ -161,19 +165,19 @@ impl UnsafeSCShareableContent {
         }
     }
 
-    fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
+    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
         let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
             unsafe { Id::from_ptr(msg_send!(self, displays)) };
 
         INSArray::into_vec(display_ptr)
     }
-    fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
+    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
         let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
         INSArray::into_vec(applications_ptr)
     }
-    fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
+    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
         let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
             unsafe { Id::from_ptr(msg_send!(self, windows)) };
 

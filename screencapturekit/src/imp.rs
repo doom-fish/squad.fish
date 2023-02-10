@@ -1,21 +1,23 @@
+use std::error::Error;
+
 use objc::runtime::Object;
 use objc_id::Id;
 
 use crate::shared::*;
 
 use crate::shared::{DisplayID, Rect, WindowID};
-use crate::sys::UnsafeSCShareableContent;
+use crate::sys::{UnsafeSCShareableContent, UnsafeSCWindow};
 
-pub struct SCRunningApplication<'a> {
+pub struct SCRunningApplication {
     process_id: isize,
-    bundle_identifier: &'a str,
-    application_name: &'a str,
+    bundle_identifier: String,
+    application_name: String,
 }
 
-pub struct SCWindow<'a> {
-    ptr: Id<Object>,
-    pub title: Option<&'a str>,
-    pub owning_application: Option<&'a SCRunningApplication<'a>>,
+pub struct SCWindow {
+    unsafe_ptr: Id<UnsafeSCShareableContent>,
+    pub title: Option<String>,
+    pub owning_application: Option<SCRunningApplication>,
     pub id: WindowID,
     pub window_layer: u32,
     pub is_active: bool,
@@ -28,11 +30,32 @@ pub struct SCDisplay {
     pub height: u64,
 }
 
-pub struct SCShareableContent<'a> {
-    pub windows: &'a [SCWindow<'a>],
-    pub applications: &'a [SCRunningApplication<'a>],
-    pub displays: &'a [SCDisplay],
+pub struct SCShareableContent {
+    pub windows: Vec<SCWindow>,
+    pub applications: Vec<SCRunningApplication>,
+    pub displays: Vec<SCDisplay>,
 }
 
-impl SCShareableContent<'_> {
-} 
+impl SCShareableContent {
+    pub fn current() -> SCShareableContent {
+        let usc = UnsafeSCShareableContent::get().unwrap();
+        let windows = usc
+                .windows()
+                .iter()
+                .map(|sw:Id<UnsafeSCWindow>| SCWindow {
+                    unsafe_ptr: sw,
+                    title: todo!(),
+                    owning_application: todo!(),
+                    id: todo!(),
+                    window_layer: todo!(),
+                    is_active: todo!(),
+                    is_on_screen: todo!(),
+                })
+                .collect();
+        SCShareableContent {
+            windows,
+            applications: todo!(),
+            displays: todo!(),
+        }
+    }
+}

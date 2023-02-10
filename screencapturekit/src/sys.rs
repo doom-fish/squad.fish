@@ -27,13 +27,13 @@ macro_rules! get_string {
 }
 
 impl UnsafeSCRunningApplication {
-    fn get_process_id(&self) -> isize {
+    pub fn get_process_id(&self) -> isize {
         unsafe { msg_send![self, processID] }
     }
-    fn get_application_name(&self) -> Option<&str> {
+    pub fn get_application_name(&self) -> Option<&str> {
         unsafe { get_string!(self, applicationName) }
     }
-    fn get_bundle_identifier(&self) -> Option<&str> {
+    pub fn get_bundle_identifier(&self) -> Option<&str> {
         unsafe { get_string!(self, bundleIdentifier) }
     }
 }
@@ -112,7 +112,7 @@ pub struct UnsafeSCShareableContent;
 unsafe impl Message for UnsafeSCShareableContent {}
 type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Object), ()>;
 impl UnsafeSCShareableContent {
-    pub unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
+    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |sc: *mut Self, _error: *mut Object| {
             tx.send(Id::from_ptr(sc)).expect("Should work!");
@@ -151,7 +151,7 @@ impl UnsafeSCShareableContent {
                 ],
             }
             rx.recv()
-        }
+         }
     }
     pub fn get() -> Result<Id<Self>, RecvError> {
         unsafe {

@@ -48,17 +48,30 @@ pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 
 impl UnsafeSCWindow {
-    fn get_owning_application(&self) -> Id<UnsafeSCRunningApplication> {
-        unsafe { Id::from_ptr(msg_send![self, owningApplication]) }
+    pub fn get_owning_application(&self) -> Option<Id<UnsafeSCRunningApplication>> {
+        unsafe {
+            let ptr: *mut UnsafeSCRunningApplication = msg_send![self, owningApplication];
+            if ptr.is_null() {
+                None
+            } else {
+                Some(Id::from_ptr(ptr))
+            }
+        }
     }
-    fn get_window_layer(&self) -> u32 {
+    pub fn get_window_layer(&self) -> u32 {
         unsafe { msg_send![self, windowLayer] }
     }
-    fn get_window_id(&self) -> WindowID {
+    pub fn get_window_id(&self) -> WindowID {
         unsafe { msg_send![self, windowID] }
     }
-    fn get_title(&self) -> Option<&str> {
+    pub fn get_title(&self) -> Option<&str> {
         unsafe { get_string!(self, title) }
+    }
+    pub fn get_is_on_screen(&self) -> bool {
+        unsafe { msg_send![self, isOnScreen] }
+    }
+    pub fn get_is_active(&self) -> bool {
+        unsafe { msg_send![self, isActive] }
     }
 }
 
@@ -112,15 +125,15 @@ pub struct UnsafeSCShareableContent;
 unsafe impl Message for UnsafeSCShareableContent {}
 type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Object), ()>;
 impl UnsafeSCShareableContent {
-    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
+    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self, Shared>>) {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |sc: *mut Self, _error: *mut Object| {
-            tx.send(Id::from_ptr(sc)).expect("Should work!");
+            tx.send(Id::from_ptr(sc).share()).expect("Should work!");
         });
         (handler.copy(), rx)
     }
 
-    pub fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self>, RecvError> {
+    pub fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self, Shared>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             match config.on_screen_windows_only {
@@ -151,9 +164,9 @@ impl UnsafeSCShareableContent {
                 ],
             }
             rx.recv()
-         }
+        }
     }
-    pub fn get() -> Result<Id<Self>, RecvError> {
+    pub fn get() -> Result<Id<Self, Shared>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             let _: () = msg_send![
@@ -177,11 +190,11 @@ impl UnsafeSCShareableContent {
 
         INSArray::into_vec(applications_ptr)
     }
-    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
+    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow, Shared>> {
         let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
-            unsafe { Id::from_ptr(msg_send!(self, windows)) };
+            unsafe { Id::from_ptr(msg_send![self, windows]) };
 
-        INSArray::into_vec(windows_ptr)
+        INSArray::into_vec(windows_ptr).into_iter().map(|w| w.share()).collect()
     }
 }
 

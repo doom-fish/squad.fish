@@ -1,76 +1,109 @@
+#![allow(dead_code)]
 mod shared;
 mod sys;
 
-use std::error::Error;
-
-use objc::runtime::Object;
-use objc_id::{Id, Owned, Shared};
-use sys::UnsafeSCRunningApplication;
-
-use crate::shared::*;
+use objc_id::{Id, Shared};
+use sys::{UnsafeSCDisplay, UnsafeSCRunningApplication};
 
 use crate::shared::{DisplayID, Rect, WindowID};
 use crate::sys::{UnsafeSCShareableContent, UnsafeSCWindow};
 
+#[derive(Debug)]
 pub struct SCRunningApplication {
-    unsafe_ptr: Id<UnsafeSCRunningApplication, Shared>,
-    process_id: isize,
-    bundle_identifier: Option<String>,
-    application_name: Option<String>,
+    unsafe_ref: Id<UnsafeSCRunningApplication, Shared>,
+    pub process_id: isize,
+    pub bundle_identifier: Option<String>,
+    pub application_name: Option<String>,
 }
 
 impl SCRunningApplication {
-    fn new(unsafe_ptr: Id<UnsafeSCRunningApplication, Shared>) -> Self {
-        let ptr = unsafe_ptr.clone();
+    fn new(unsafe_ref: Id<UnsafeSCRunningApplication, Shared>) -> Self {
         SCRunningApplication {
-            process_id:ptr.get_process_id(),
-            bundle_identifier: ptr.get_bundle_identifier().map(String::from),
-            application_name: ptr.get_application_name().map(String::from),
-            unsafe_ptr: ptr,
+            process_id: unsafe_ref.get_process_id(),
+            bundle_identifier: unsafe_ref.get_bundle_identifier(),
+            application_name: unsafe_ref.get_application_name(),
+            unsafe_ref,
         }
     }
 }
 
+#[derive(Debug)]
 pub struct SCWindow {
-    unsafe_ptr: Id<UnsafeSCWindow, Shared>,
+    unsafe_ref: Id<UnsafeSCWindow, Shared>,
     pub title: Option<String>,
-    pub owning_application: Option<Id<SCRunningApplication, Shared>>,
+    pub owning_application: Option<SCRunningApplication>,
     pub window_id: WindowID,
     pub window_layer: u32,
     pub is_active: bool,
     pub is_on_screen: bool,
 }
 impl SCWindow {
-    pub fn new(unsafe_ptr: Id<UnsafeSCWindow, Shared>) -> Self {
+    pub fn new(unsafe_ref: Id<UnsafeSCWindow, Shared>) -> Self {
         SCWindow {
-            unsafe_ptr: unsafe_ptr.clone(),
+            title: unsafe_ref.get_title(),
+            window_id: unsafe_ref.get_window_id(),
+            window_layer: unsafe_ref.get_window_layer(),
+            is_active: unsafe_ref.get_is_active(),
+            is_on_screen: unsafe_ref.get_is_on_screen(),
+            owning_application: unsafe_ref
+                .get_owning_application()
+                .map(SCRunningApplication::new),
+            unsafe_ref,
         }
     }
 }
+
+#[derive(Debug)]
 pub struct SCDisplay {
+    unsafe_ref: Id<UnsafeSCDisplay, Shared>,
     pub display_id: DisplayID,
     pub frame: Rect,
-    pub width: u64,
-    pub height: u64,
+    pub width: u32,
+    pub height: u32,
+}
+impl SCDisplay {
+    fn new(unsafe_ref: Id<UnsafeSCDisplay, Shared>) -> Self {
+        SCDisplay {
+            display_id: unsafe_ref.get_display_id(),
+            frame: unsafe_ref.get_frame(),
+            width: unsafe_ref.get_width(),
+            height: unsafe_ref.get_height(),
+            unsafe_ref,
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct SCShareableContent {
-    unsafe_ptr: Id<UnsafeSCShareableContent, Shared>,
+    unsafe_ref: Id<UnsafeSCShareableContent, Shared>,
     pub windows: Vec<SCWindow>,
-    
-   // pub applications: Vec<SCRunningApplication<'a>>,
-   // pub displays: Vec<SCDisplay>,
+    pub applications: Vec<SCRunningApplication>,
+    pub displays: Vec<SCDisplay>,
 }
 
-impl  SCShareableContent  {
+impl SCShareableContent {
     pub fn current() -> Self {
-        let unsafe_ptr = UnsafeSCShareableContent::get().unwrap();
-        let windows: Vec<SCWindow> = unsafe_ptr.clone().windows().into_iter().map(SCWindow::new).collect();
+        let unsafe_ref = UnsafeSCShareableContent::get().unwrap();
+        let windows = unsafe_ref
+            .windows()
+            .into_iter()
+            .map(SCWindow::new)
+            .collect();
+        let applications = unsafe_ref
+            .applications()
+            .into_iter()
+            .map(SCRunningApplication::new)
+            .collect();
+        let displays = unsafe_ref
+            .displays()
+            .into_iter()
+            .map(SCDisplay::new)
+            .collect();
         SCShareableContent {
-            unsafe_ptr: unsafe_ptr.clone(),
-            windows, 
-            //applications: todo!(),
-            //displays: todo!(),
+            windows,
+            applications,
+            displays,
+            unsafe_ref,
         }
     }
 }

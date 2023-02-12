@@ -11,6 +11,7 @@ use objc_id::*;
 
 use crate::shared::{DisplayID, Rect, WindowID};
 
+#[derive(Debug)]
 pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}
 
@@ -21,7 +22,7 @@ macro_rules! get_string {
         if string_ptr.is_null() {
             None
         } else {
-            Some((*string_ptr).as_str())
+            Some((*string_ptr).as_str().to_owned())
         }
     }};
 }
@@ -30,10 +31,10 @@ impl UnsafeSCRunningApplication {
     pub fn get_process_id(&self) -> isize {
         unsafe { msg_send![self, processID] }
     }
-    pub fn get_application_name(&self) -> Option<&str> {
+    pub fn get_application_name(&self) -> Option<String> {
         unsafe { get_string!(self, applicationName) }
     }
-    pub fn get_bundle_identifier(&self) -> Option<&str> {
+    pub fn get_bundle_identifier(&self) -> Option<String> {
         unsafe { get_string!(self, bundleIdentifier) }
     }
 }
@@ -44,17 +45,18 @@ impl INSObject for UnsafeSCRunningApplication {
                 .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
     }
 }
+#[derive(Debug)]
 pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 
 impl UnsafeSCWindow {
-    pub fn get_owning_application(&self) -> Option<Id<UnsafeSCRunningApplication>> {
+    pub fn get_owning_application(&self) -> Option<Id<UnsafeSCRunningApplication, Shared>> {
         unsafe {
             let ptr: *mut UnsafeSCRunningApplication = msg_send![self, owningApplication];
             if ptr.is_null() {
                 None
             } else {
-                Some(Id::from_ptr(ptr))
+                Some(Id::from_ptr(ptr).share())
             }
         }
     }
@@ -64,7 +66,7 @@ impl UnsafeSCWindow {
     pub fn get_window_id(&self) -> WindowID {
         unsafe { msg_send![self, windowID] }
     }
-    pub fn get_title(&self) -> Option<&str> {
+    pub fn get_title(&self) -> Option<String> {
         unsafe { get_string!(self, title) }
     }
     pub fn get_is_on_screen(&self) -> bool {
@@ -82,6 +84,7 @@ impl INSObject for UnsafeSCWindow {
     }
 }
 
+#[derive(Debug)]
 pub struct UnsafeSCDisplay;
 unsafe impl Message for UnsafeSCDisplay {}
 
@@ -121,6 +124,7 @@ pub struct ExcludingDesktopWindowsConfig<'a> {
     on_screen_windows_only: OnScreenOnlySettings<'a>,
 }
 
+#[derive(Debug)]
 pub struct UnsafeSCShareableContent;
 unsafe impl Message for UnsafeSCShareableContent {}
 type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Object), ()>;
@@ -133,7 +137,9 @@ impl UnsafeSCShareableContent {
         (handler.copy(), rx)
     }
 
-    pub fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self, Shared>, RecvError> {
+    pub fn get_with_config(
+        config: &ExcludingDesktopWindowsConfig,
+    ) -> Result<Id<Self, Shared>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             match config.on_screen_windows_only {
@@ -178,23 +184,32 @@ impl UnsafeSCShareableContent {
         }
     }
 
-    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
+    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay, Shared>> {
         let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
             unsafe { Id::from_ptr(msg_send!(self, displays)) };
 
         INSArray::into_vec(display_ptr)
+            .into_iter()
+            .map(|d| d.share())
+            .collect()
     }
-    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
+    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication, Shared>> {
         let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
         INSArray::into_vec(applications_ptr)
+            .into_iter()
+            .map(|a| a.share())
+            .collect()
     }
     pub fn windows(&self) -> Vec<Id<UnsafeSCWindow, Shared>> {
         let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
             unsafe { Id::from_ptr(msg_send![self, windows]) };
 
-        INSArray::into_vec(windows_ptr).into_iter().map(|w| w.share()).collect()
+        INSArray::into_vec(windows_ptr)
+            .into_iter()
+            .map(|w| w.share())
+            .collect()
     }
 }
 

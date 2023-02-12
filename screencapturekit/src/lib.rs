@@ -2,7 +2,7 @@
 mod shared;
 mod sys;
 
-use objc_id::{Id, Shared};
+use objc_id::{Id};
 use sys::{UnsafeSCDisplay, UnsafeSCRunningApplication};
 
 use crate::shared::{DisplayID, Rect, WindowID};
@@ -10,14 +10,14 @@ use crate::sys::{UnsafeSCShareableContent, UnsafeSCWindow};
 
 #[derive(Debug)]
 pub struct SCRunningApplication {
-    unsafe_ref: Id<UnsafeSCRunningApplication, Shared>,
+    unsafe_ref: Id<UnsafeSCRunningApplication>,
     pub process_id: isize,
     pub bundle_identifier: Option<String>,
     pub application_name: Option<String>,
 }
 
 impl SCRunningApplication {
-    fn new(unsafe_ref: Id<UnsafeSCRunningApplication, Shared>) -> Self {
+    fn new(unsafe_ref: Id<UnsafeSCRunningApplication>) -> Self {
         SCRunningApplication {
             process_id: unsafe_ref.get_process_id(),
             bundle_identifier: unsafe_ref.get_bundle_identifier(),
@@ -29,7 +29,7 @@ impl SCRunningApplication {
 
 #[derive(Debug)]
 pub struct SCWindow {
-    unsafe_ref: Id<UnsafeSCWindow, Shared>,
+    unsafe_ref: Id<UnsafeSCWindow>,
     pub title: Option<String>,
     pub owning_application: Option<SCRunningApplication>,
     pub window_id: WindowID,
@@ -38,7 +38,7 @@ pub struct SCWindow {
     pub is_on_screen: bool,
 }
 impl SCWindow {
-    pub fn new(unsafe_ref: Id<UnsafeSCWindow, Shared>) -> Self {
+    pub fn new(unsafe_ref: Id<UnsafeSCWindow>) -> Self {
         SCWindow {
             title: unsafe_ref.get_title(),
             window_id: unsafe_ref.get_window_id(),
@@ -55,14 +55,14 @@ impl SCWindow {
 
 #[derive(Debug)]
 pub struct SCDisplay {
-    unsafe_ref: Id<UnsafeSCDisplay, Shared>,
+    unsafe_ref: Id<UnsafeSCDisplay>,
     pub display_id: DisplayID,
     pub frame: Rect,
     pub width: u32,
     pub height: u32,
 }
 impl SCDisplay {
-    fn new(unsafe_ref: Id<UnsafeSCDisplay, Shared>) -> Self {
+    fn new(unsafe_ref: Id<UnsafeSCDisplay>) -> Self {
         SCDisplay {
             display_id: unsafe_ref.get_display_id(),
             frame: unsafe_ref.get_frame(),
@@ -75,7 +75,7 @@ impl SCDisplay {
 
 #[derive(Debug)]
 pub struct SCShareableContent {
-    unsafe_ref: Id<UnsafeSCShareableContent, Shared>,
+    unsafe_ref: Id<UnsafeSCShareableContent>,
     pub windows: Vec<SCWindow>,
     pub applications: Vec<SCRunningApplication>,
     pub displays: Vec<SCDisplay>,

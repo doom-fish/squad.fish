@@ -50,13 +50,13 @@ pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 
 impl UnsafeSCWindow {
-    pub fn get_owning_application(&self) -> Option<Id<UnsafeSCRunningApplication, Shared>> {
+    pub fn get_owning_application(&self) -> Option<Id<UnsafeSCRunningApplication>> {
         unsafe {
             let ptr: *mut UnsafeSCRunningApplication = msg_send![self, owningApplication];
             if ptr.is_null() {
                 None
             } else {
-                Some(Id::from_ptr(ptr).share())
+                Some(Id::from_ptr(ptr))
             }
         }
     }
@@ -129,17 +129,15 @@ pub struct UnsafeSCShareableContent;
 unsafe impl Message for UnsafeSCShareableContent {}
 type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Object), ()>;
 impl UnsafeSCShareableContent {
-    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self, Shared>>) {
+    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |sc: *mut Self, _error: *mut Object| {
-            tx.send(Id::from_ptr(sc).share()).expect("Should work!");
+            tx.send(Id::from_ptr(sc)).expect("Should work!");
         });
         (handler.copy(), rx)
     }
 
-    pub fn get_with_config(
-        config: &ExcludingDesktopWindowsConfig,
-    ) -> Result<Id<Self, Shared>, RecvError> {
+    pub fn get_with_config(config: &ExcludingDesktopWindowsConfig) -> Result<Id<Self>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             match config.on_screen_windows_only {
@@ -172,7 +170,7 @@ impl UnsafeSCShareableContent {
             rx.recv()
         }
     }
-    pub fn get() -> Result<Id<Self, Shared>, RecvError> {
+    pub fn get() -> Result<Id<Self>, RecvError> {
         unsafe {
             let (handler, rx) = Self::new_completion_handler();
             let _: () = msg_send![
@@ -184,32 +182,23 @@ impl UnsafeSCShareableContent {
         }
     }
 
-    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay, Shared>> {
+    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
         let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
             unsafe { Id::from_ptr(msg_send!(self, displays)) };
 
         INSArray::into_vec(display_ptr)
-            .into_iter()
-            .map(|d| d.share())
-            .collect()
     }
-    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication, Shared>> {
+    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
         let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
         INSArray::into_vec(applications_ptr)
-            .into_iter()
-            .map(|a| a.share())
-            .collect()
     }
-    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow, Shared>> {
+    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
         let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
             unsafe { Id::from_ptr(msg_send![self, windows]) };
 
         INSArray::into_vec(windows_ptr)
-            .into_iter()
-            .map(|w| w.share())
-            .collect()
     }
 }
 

@@ -2,7 +2,7 @@
 mod shared;
 mod sys;
 
-use objc_id::{Id};
+use objc_id::Id;
 use sys::{UnsafeSCDisplay, UnsafeSCRunningApplication};
 
 use crate::shared::{DisplayID, Rect, WindowID};
@@ -16,8 +16,8 @@ pub struct SCRunningApplication {
     pub application_name: Option<String>,
 }
 
-impl SCRunningApplication {
-    fn new(unsafe_ref: Id<UnsafeSCRunningApplication>) -> Self {
+impl From<Id<UnsafeSCRunningApplication>> for SCRunningApplication {
+    fn from(unsafe_ref: Id<UnsafeSCRunningApplication>) -> Self {
         SCRunningApplication {
             process_id: unsafe_ref.get_process_id(),
             bundle_identifier: unsafe_ref.get_bundle_identifier(),
@@ -37,8 +37,9 @@ pub struct SCWindow {
     pub is_active: bool,
     pub is_on_screen: bool,
 }
-impl SCWindow {
-    pub fn new(unsafe_ref: Id<UnsafeSCWindow>) -> Self {
+
+impl From<Id<UnsafeSCWindow>> for SCWindow {
+    fn from(unsafe_ref: Id<UnsafeSCWindow>) -> Self {
         SCWindow {
             title: unsafe_ref.get_title(),
             window_id: unsafe_ref.get_window_id(),
@@ -47,7 +48,7 @@ impl SCWindow {
             is_on_screen: unsafe_ref.get_is_on_screen(),
             owning_application: unsafe_ref
                 .get_owning_application()
-                .map(SCRunningApplication::new),
+                .map(SCRunningApplication::from),
             unsafe_ref,
         }
     }
@@ -61,8 +62,9 @@ pub struct SCDisplay {
     pub width: u32,
     pub height: u32,
 }
-impl SCDisplay {
-    fn new(unsafe_ref: Id<UnsafeSCDisplay>) -> Self {
+
+impl From<Id<UnsafeSCDisplay>> for SCDisplay {
+    fn from(unsafe_ref: Id<UnsafeSCDisplay>) -> Self {
         SCDisplay {
             display_id: unsafe_ref.get_display_id(),
             frame: unsafe_ref.get_frame(),
@@ -84,20 +86,20 @@ pub struct SCShareableContent {
 impl SCShareableContent {
     pub fn current() -> Self {
         let unsafe_ref = UnsafeSCShareableContent::get().unwrap();
-        let windows = unsafe_ref
+        let windows: Vec<SCWindow> = unsafe_ref
             .windows()
             .into_iter()
-            .map(SCWindow::new)
+            .map(SCWindow::from)
             .collect();
         let applications = unsafe_ref
             .applications()
             .into_iter()
-            .map(SCRunningApplication::new)
+            .map(SCRunningApplication::from)
             .collect();
         let displays = unsafe_ref
             .displays()
             .into_iter()
-            .map(SCDisplay::new)
+            .map(SCDisplay::from)
             .collect();
         SCShareableContent {
             windows,

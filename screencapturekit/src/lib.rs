@@ -3,10 +3,9 @@ mod shared;
 mod sys;
 
 use objc_id::Id;
-use sys::{UnsafeSCDisplay, UnsafeSCRunningApplication};
 
-use crate::shared::{DisplayID, Rect, WindowID};
-use crate::sys::{UnsafeSCShareableContent, UnsafeSCWindow};
+use shared::{DisplayID, Rect, WindowID};
+use sys::{UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCShareableContent, UnsafeSCWindow};
 
 #[derive(Debug)]
 pub struct SCRunningApplication {

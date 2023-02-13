@@ -9,23 +9,11 @@ use objc::{
 use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
 use objc_id::*;
 
-use crate::shared::{DisplayID, Rect, WindowID};
+use crate::shared::{get_string, DisplayID, Rect, WindowID};
 
 #[derive(Debug)]
 pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}
-
-macro_rules! get_string {
-    // The `expr` designator is used for expressions.
-    ($obj:ident, $name: ident) => {{
-        let string_ptr: *const NSString = msg_send![$obj, $name];
-        if string_ptr.is_null() {
-            None
-        } else {
-            Some((*string_ptr).as_str().to_owned())
-        }
-    }};
-}
 
 impl UnsafeSCRunningApplication {
     pub fn get_process_id(&self) -> isize {

@@ -5,7 +5,7 @@ mod sys;
 use objc_id::Id;
 
 use shared::{DisplayID, Rect, WindowID};
-use sys::{UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCShareableContent, UnsafeSCWindow};
+use sys::unssc::{UnsafeSCRunningApplication, UnsafeSCWindow, UnsafeSCDisplay, UnsafeSCShareableContent};
 
 #[derive(Debug)]
 pub struct SCRunningApplication {

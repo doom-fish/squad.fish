@@ -1,6 +1,7 @@
 use std::sync::mpsc::{channel, Receiver, RecvError};
 
 use block::{ConcreteBlock, RcBlock};
+use core_graphics_types::geometry::CGRect;
 use objc::{
     msg_send,
     runtime::{Class, Object},
@@ -9,14 +10,13 @@ use objc::{
 use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
 use objc_id::*;
 
-use crate::shared::{get_string, DisplayID, Rect, WindowID};
-
+use crate::{macros::get_string, os_types::{PidT, UInt32, BOOL}};
 #[derive(Debug)]
 pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}
-
 impl UnsafeSCRunningApplication {
-    pub fn get_process_id(&self) -> isize {
+
+    pub fn get_process_id(&self) -> PidT {
         unsafe { msg_send![self, processID] }
     }
     pub fn get_application_name(&self) -> Option<String> {
@@ -48,19 +48,19 @@ impl UnsafeSCWindow {
             }
         }
     }
-    pub fn get_window_layer(&self) -> u32 {
+    pub fn get_window_layer(&self) -> UInt32 {
         unsafe { msg_send![self, windowLayer] }
     }
-    pub fn get_window_id(&self) -> WindowID {
+    pub fn get_window_id(&self) -> UInt32 {
         unsafe { msg_send![self, windowID] }
     }
     pub fn get_title(&self) -> Option<String> {
         unsafe { get_string!(self, title) }
     }
-    pub fn get_is_on_screen(&self) -> bool {
+    pub fn get_is_on_screen(&self) -> BOOL {
         unsafe { msg_send![self, isOnScreen] }
     }
-    pub fn get_is_active(&self) -> bool {
+    pub fn get_is_active(&self) -> BOOL {
         unsafe { msg_send![self, isActive] }
     }
 }
@@ -77,16 +77,16 @@ pub struct UnsafeSCDisplay;
 unsafe impl Message for UnsafeSCDisplay {}
 
 impl UnsafeSCDisplay {
-    pub fn get_display_id(&self) -> DisplayID {
+    pub fn get_display_id(&self) -> UInt32 {
         unsafe { msg_send![self, displayID] }
     }
-    pub fn get_frame(&self) -> Rect {
+    pub fn get_frame(&self) -> CGRect {
         unsafe { msg_send![self, frame] }
     }
-    pub fn get_height(&self) -> u32 {
+    pub fn get_height(&self) -> UInt32 {
         unsafe { msg_send![self, height] }
     }
-    pub fn get_width(&self) -> u32 {
+    pub fn get_width(&self) -> UInt32 {
         unsafe { msg_send![self, width] }
     }
 }

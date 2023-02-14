@@ -1,16 +1,17 @@
 #![allow(dead_code)]
-mod shared;
 mod sys;
+mod macros;
+mod os_types;
 
+use core_graphics_types::geometry::CGRect;
 use objc_id::Id;
 
-use shared::{DisplayID, Rect, WindowID};
 use sys::shareable_content::{UnsafeSCRunningApplication, UnsafeSCWindow, UnsafeSCDisplay, UnsafeSCShareableContent};
 
 #[derive(Debug)]
 pub struct SCRunningApplication {
     unsafe_ref: Id<UnsafeSCRunningApplication>,
-    pub process_id: isize,
+    pub process_id: i32,
     pub bundle_identifier: Option<String>,
     pub application_name: Option<String>,
 }
@@ -31,7 +32,7 @@ pub struct SCWindow {
     unsafe_ref: Id<UnsafeSCWindow>,
     pub title: Option<String>,
     pub owning_application: Option<SCRunningApplication>,
-    pub window_id: WindowID,
+    pub window_id: u32,
     pub window_layer: u32,
     pub is_active: bool,
     pub is_on_screen: bool,
@@ -43,8 +44,8 @@ impl From<Id<UnsafeSCWindow>> for SCWindow {
             title: unsafe_ref.get_title(),
             window_id: unsafe_ref.get_window_id(),
             window_layer: unsafe_ref.get_window_layer(),
-            is_active: unsafe_ref.get_is_active(),
-            is_on_screen: unsafe_ref.get_is_on_screen(),
+            is_active: unsafe_ref.get_is_active() == 1,
+            is_on_screen: unsafe_ref.get_is_on_screen() == 1,
             owning_application: unsafe_ref
                 .get_owning_application()
                 .map(SCRunningApplication::from),
@@ -56,8 +57,8 @@ impl From<Id<UnsafeSCWindow>> for SCWindow {
 #[derive(Debug)]
 pub struct SCDisplay {
     unsafe_ref: Id<UnsafeSCDisplay>,
-    pub display_id: DisplayID,
-    pub frame: Rect,
+    pub display_id: u32,
+    pub frame: CGRect,
     pub width: u32,
     pub height: u32,
 }

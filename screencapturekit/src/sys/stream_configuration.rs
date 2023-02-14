@@ -1,9 +1,10 @@
+use crate::os_types::{OSType, UInt32, UInt64, BOOL};
+use core_graphics_types::geometry::CGRect;
 use objc::{msg_send, *, runtime::Class};
 
 use objc_foundation::INSObject;
 use objc_id::Id;
 
-use crate::shared::{OSType, Rect};
 
 pub struct UnsafeSCStreamConfiguration;
 unsafe impl Message for UnsafeSCStreamConfiguration {}
@@ -28,15 +29,15 @@ impl INSObject for UnsafeSCStreamConfiguration {
 #[derive(Default)]
 pub struct SCStreamConfiguration {
     // The width of the output.
-    width: u32,
+    width: UInt32,
     //   The height of the output.
-    height: u32,
+    height: UInt32,
     // A boolean value that indicates whether to scale the output to fit the configured width and height.
-    scales_to_fit: bool,
+    scales_to_fit: BOOL,
     // A rectangle that specifies the source area to capture.
-    source_rect: Rect,
+    source_rect: CGRect,
     // A rectangle that specifies a destination into which to write the output.
-    destination_rect: Rect,
+    destination_rect: CGRect,
     // Configuring Colors
     // A pixel format for sample buffers that a stream outputs.
     pixel_format: OSType,
@@ -49,21 +50,21 @@ pub struct SCStreamConfiguration {
     // Todo: Implement Color struct
     //backgroundColor: Color,
     // A boolean value that determines whether the cursor is visible in the stream.
-    shows_cursor: bool,
+    shows_cursor: BOOL,
     // Optimizing Performance
     // The maximum number of frames for the queue to store.
-    queue_depth: u32,
+    queue_depth: UInt32,
     // The desired minimum time between frame updates, in seconds.
-    minimum_frameinterval: u64,
+    minimum_frameinterval: UInt64,
     // Configuring Audio
     // A boolean value that indicates whether to capture audio.
-    captures_audio: bool,
+    captures_audio: BOOL,
     // The sample rate for audio capture.
-    sample_rate: u32,
+    sample_rate: UInt32,
     // The number of audio channels to capture.
-    channel_count: u32,
+    channel_count: UInt32,
     // A boolean value that indicates whether to exclude a
-    excludes_current_process_audio: bool,
+    excludes_current_process_audio: BOOL,
 }
 
 #[cfg(test)]

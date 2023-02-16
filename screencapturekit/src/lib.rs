@@ -3,9 +3,9 @@ mod macros;
 mod os_types;
 mod sys;
 
-use core_graphics_types::geometry::CGRect;
 use objc_id::Id;
 
+use os_types::geometry::CGRect;
 use sys::shareable_content::{
     UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCShareableContent, UnsafeSCWindow,
 };

@@ -10,7 +10,5 @@ objc = { version = "0.2.7", features = ["exception"] }
 objc_id = "0.1.1"
 objc-foundation = "0.1.1"
 block = "0.1.0"
-core-graphics = "0.22.3"
-core-graphics-types = "0.1.1"
 #[build]
 #rustflags = ["-Z", "sanitizer=address"]

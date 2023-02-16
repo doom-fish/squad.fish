@@ -1,7 +1,13 @@
 use std::sync::mpsc::{channel, Receiver, RecvError};
 
+use crate::{
+    macros::get_string,
+    os_types::{
+        base::{PidT, UInt32, BOOL},
+        geometry::CGRect,
+    },
+};
 use block::{ConcreteBlock, RcBlock};
-use core_graphics_types::geometry::CGRect;
 use objc::{
     msg_send,
     runtime::{Class, Object},
@@ -9,12 +15,6 @@ use objc::{
 };
 use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
 use objc_id::*;
-
-use crate::{
-    macros::get_string,
-    os_types::base::{PidT, UInt32, BOOL},
-};
-
 #[derive(Debug)]
 pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}

@@ -1,11 +1,12 @@
 use crate::os_types::{OSType, UInt32, UInt64, BOOL};
 use core_graphics::color::CGColor;
 use core_graphics_types::geometry::CGRect;
-use objc::{msg_send, *, runtime::Class};
+use objc::{msg_send, runtime::Class, *};
 
 use objc_foundation::INSObject;
 use objc_id::Id;
 
+use std::ffi::*;
 
 pub struct UnsafeSCStreamConfiguration;
 unsafe impl Message for UnsafeSCStreamConfiguration {}
@@ -13,8 +14,8 @@ impl From<SCStreamConfiguration> for Id<UnsafeSCStreamConfiguration> {
     fn from(value: SCStreamConfiguration) -> Self {
         let unsafe_ref = UnsafeSCStreamConfiguration::new();
         unsafe {
-             let _:() = msg_send![unsafe_ref, setWidth: value.width];
-             let _:() = msg_send![unsafe_ref, setHeight: value.height];
+            let _: () = msg_send![unsafe_ref, setWidth: value.width];
+            let _: () = msg_send![unsafe_ref, setHeight: value.height];
         }
         unsafe_ref
     }

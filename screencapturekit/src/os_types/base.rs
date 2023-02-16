@@ -12,6 +12,7 @@ pub type SInt64 = ::std::ffi::c_longlong;
 pub type UInt64 = ::std::ffi::c_ulonglong;
 pub type Float32 = ::std::ffi::c_float;
 pub type Float64 = ::std::ffi::c_double;
+pub type CGFloat = ::std::ffi::c_double;
 pub type Size = ::std::ffi::c_long;
 pub type BOOL = ::std::ffi::c_schar;
 pub type FourCharCode = UInt32;
@@ -38,4 +39,3 @@ pub struct CMTime {
     pub flags: CMTimeFlags,
     pub epoch: CMTimeEpoch,
 }
-

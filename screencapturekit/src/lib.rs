@@ -1,12 +1,14 @@
 #![allow(dead_code)]
-mod sys;
 mod macros;
 mod os_types;
+mod sys;
 
 use core_graphics_types::geometry::CGRect;
 use objc_id::Id;
 
-use sys::shareable_content::{UnsafeSCRunningApplication, UnsafeSCWindow, UnsafeSCDisplay, UnsafeSCShareableContent};
+use sys::shareable_content::{
+    UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCShareableContent, UnsafeSCWindow,
+};
 
 #[derive(Debug)]
 pub struct SCRunningApplication {

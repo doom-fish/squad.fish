@@ -10,13 +10,15 @@ use objc::{
 use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
 use objc_id::*;
 
-use crate::{macros::get_string, os_types::{PidT, UInt32, BOOL}};
+use crate::{
+    macros::get_string,
+    os_types::base::{PidT, UInt32, BOOL},
+};
 
 #[derive(Debug)]
 pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}
 impl UnsafeSCRunningApplication {
-
     pub fn get_process_id(&self) -> PidT {
         unsafe { msg_send![self, processID] }
     }

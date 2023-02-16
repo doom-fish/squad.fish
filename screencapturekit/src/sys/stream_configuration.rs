@@ -1,12 +1,13 @@
-use crate::os_types::{OSType, UInt32, UInt64, BOOL};
-use core_graphics::color::CGColor;
-use core_graphics_types::geometry::CGRect;
 use objc::{msg_send, runtime::Class, *};
 
 use objc_foundation::INSObject;
 use objc_id::Id;
 
-use std::ffi::*;
+use crate::os_types::{
+    base::{OSType, UInt32, UInt64, BOOL},
+    geometry::CGRect,
+    graphics::CGColor,
+};
 
 pub struct UnsafeSCStreamConfiguration;
 unsafe impl Message for UnsafeSCStreamConfiguration {}
@@ -27,13 +28,8 @@ impl INSObject for UnsafeSCStreamConfiguration {
                 .expect("Missing SCStreamConfiguration class, check that the binary is linked with ScreenCaptureKit")
     }
 }
-struct Color(CGColor);
-impl Default for Color {
-    fn default() -> Self {
-        Color(CGColor::rgb(0f64, 0f64, 0f64, 1f64))
-    }
-}
-#[derive(Default)]
+
+#[derive(Default, Debug)]
 pub struct SCStreamConfiguration {
     // The width of the output.
     width: UInt32,
@@ -55,7 +51,7 @@ pub struct SCStreamConfiguration {
     // A background color for the output.
     // Controlling Visibility
     // Todo: Implement Color struct
-    background_color: Color,
+    background_color: CGColor,
 
     // A boolean value that determines whether the cursor is visible in the stream.
     shows_cursor: BOOL,

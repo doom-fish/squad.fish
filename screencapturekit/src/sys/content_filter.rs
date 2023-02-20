@@ -1,5 +1,5 @@
 use objc::{runtime::Class, *};
-use objc_foundation::{INSObject, NSArray, INSArray};
+use objc_foundation::{INSArray, INSObject, NSArray};
 use objc_id::{Id, Shared};
 
 use super::shareable_content::{
@@ -7,7 +7,9 @@ use super::shareable_content::{
 };
 
 #[derive(Debug)]
-pub struct UnsafeContentFilter;
+pub struct UnsafeContentFilter {
+    __priv: u8,
+}
 unsafe impl Message for UnsafeContentFilter {}
 impl UnsafeContentFilter {}
 
@@ -20,9 +22,15 @@ impl INSObject for UnsafeContentFilter {
 }
 pub enum InitParams<'a> {
     DesktopIndependentWindow(Id<UnsafeSCWindow, Shared>),
-    Display(Id<UnsafeSCDisplay>),
-    DisplayIncludingWindows(Id<UnsafeSCDisplay>, &'a [Id<UnsafeSCWindow, Shared>]),
-    DisplayExcludingWindows(Id<UnsafeSCDisplay>, &'a [Id<UnsafeSCWindow, Shared>]),
+    Display(Id<UnsafeSCDisplay, Shared>),
+    DisplayIncludingWindows(
+        Id<UnsafeSCDisplay, Shared>,
+        &'a [Id<UnsafeSCWindow, Shared>],
+    ),
+    DisplayExcludingWindows(
+        Id<UnsafeSCDisplay, Shared>,
+        &'a [Id<UnsafeSCWindow, Shared>],
+    ),
     DisplayIncludingApplicationsExceptingWindows(
         Id<UnsafeSCDisplay, Shared>,
         &'a [Id<UnsafeSCRunningApplication, Shared>],
@@ -38,16 +46,32 @@ impl UnsafeContentFilter {
     fn init(&self, params: InitParams) {
         unsafe {
             match params {
+                InitParams::Display(display) => {
+                    let _: () = msg_send![self, initWithDisplay: display excludingWindows: NSArray::from_slice(&[] as &[Id<UnsafeSCWindow, Shared>])];
+                }
                 InitParams::DesktopIndependentWindow(window) => {
-                    msg_send![self, initWithDesktopIndependentWindow: window]
+                    let _: () = msg_send![self, initWithDesktopIndependentWindow: window];
                 }
                 InitParams::DisplayIncludingWindows(display, windows) => {
-                    msg_send![self, initWithDisplay : display excludingWindows: NSArray::from_slice(windows)]
-                },
-                InitParams::DisplayExcludingWindows(_, _) => todo!(),
-                InitParams::DisplayIncludingApplicationsExceptingWindows(_, _, _) => todo!(),
-                InitParams::DisplayExcludingApplicationsExceptingWindows(_, _, _) => todo!(),
-                InitParams::Display(_) => todo!(),
+                    let _: () = msg_send![self, initWithDisplay : display includingWindows: NSArray::from_slice(windows)];
+                }
+                InitParams::DisplayExcludingWindows(display, windows) => {
+                    let _: () = msg_send![self, initWithDisplay : display excludingWindows: NSArray::from_slice(windows)];
+                }
+                InitParams::DisplayIncludingApplicationsExceptingWindows(
+                    display,
+                    applications,
+                    windows,
+                ) => {
+                    let _: () = msg_send![self, dinitWithDisplay : display excludingApplications : NSArray::from_slice(applications) exceptingWindows:  NSArray::from_slice(windows)];
+                }
+                InitParams::DisplayExcludingApplicationsExceptingWindows(
+                    display,
+                    applications,
+                    windows,
+                ) => {
+                    let _: () = msg_send![self, dinitWithDisplay : display includingApplications : NSArray::from_slice(applications) exceptingWindows: NSArray::from_slice(windows)];
+                }
             }
         };
     }
@@ -65,12 +89,8 @@ mod test {
             .unwrap()
             .displays()
             .pop()
-            .unwrap();
-        let window = UnsafeSCShareableContent::get()
             .unwrap()
-            .windows()
-            .pop()
-            .unwrap().share();
-        a.init(InitParams::DisplayExcludingWindows(display, &[window]));
+            .share();
+        a.init(InitParams::Display(display));
     }
 }

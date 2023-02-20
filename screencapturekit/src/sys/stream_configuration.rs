@@ -4,7 +4,7 @@ use objc_foundation::INSObject;
 use objc_id::Id;
 
 use crate::os_types::{
-    base::{OSType, UInt32, UInt64, BOOL},
+    base::{CMTime, OSType, UInt32, BOOL},
     geometry::CGRect,
     graphics::CGColor,
 };
@@ -17,6 +17,16 @@ impl From<SCStreamConfiguration> for Id<UnsafeSCStreamConfiguration> {
         unsafe {
             let _: () = msg_send![unsafe_ref, setWidth: value.width];
             let _: () = msg_send![unsafe_ref, setHeight: value.height];
+            let _: () = msg_send![unsafe_ref, scaleToFit: value.scales_to_fit];
+            let _: () = msg_send![unsafe_ref, sourceRect: value.source_rect];
+            let _: () = msg_send![unsafe_ref, destinationRect: value.destination_rect];
+            let _: () = msg_send![unsafe_ref, pixelFormat: value.pixel_format];
+            let _: () = msg_send![unsafe_ref, colorMatrix: value.color_matrix];
+            let _: () = msg_send![unsafe_ref, colorSpaceName: value.color_space_name];
+            let _: () = msg_send![unsafe_ref, backgroundColor: value.background_color];
+            let _: () = msg_send![unsafe_ref, showCursor: value.shows_cursor];
+            let _: () = msg_send![unsafe_ref, queueDepth: value.queue_depth];
+            let _: () = msg_send![unsafe_ref, minimumFrameInterval: value.minimum_frame_interval];
         }
         unsafe_ref
     }
@@ -59,7 +69,7 @@ pub struct SCStreamConfiguration {
     // The maximum number of frames for the queue to store.
     queue_depth: UInt32,
     // The desired minimum time between frame updates, in seconds.
-    minimum_frameinterval: UInt64,
+    minimum_frame_interval: CMTime,
     // Configuring Audio
     // A boolean value that indicates whether to capture audio.
     captures_audio: BOOL,

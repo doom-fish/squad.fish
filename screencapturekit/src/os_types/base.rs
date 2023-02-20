@@ -32,7 +32,7 @@ pub const CMTIME_FLAGS_IMPLIED_VALUE_FLAGS_MASK: CMTimeFlags = 28;
 pub type CMTimeFlags = UInt32;
 
 #[repr(C, packed(4))]
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct CMTime {
     pub value: CMTimeValue,
     pub timescale: CMTimeScale,

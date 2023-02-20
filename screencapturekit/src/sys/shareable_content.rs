@@ -15,6 +15,7 @@ use objc::{
 };
 use objc_foundation::{INSArray, INSObject, INSString, NSArray, NSString};
 use objc_id::*;
+
 #[derive(Debug)]
 pub struct UnsafeSCRunningApplication;
 unsafe impl Message for UnsafeSCRunningApplication {}
@@ -36,7 +37,7 @@ impl INSObject for UnsafeSCRunningApplication {
                 .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 

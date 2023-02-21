@@ -174,23 +174,23 @@ impl UnsafeSCShareableContent {
         }
     }
 
-    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
+    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay, Shared>> {
         let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
             unsafe { Id::from_ptr(msg_send!(self, displays)) };
 
-        INSArray::into_vec(display_ptr)
+        INSArray::into_vec(display_ptr).iter().map(|d| d.share()).collect()
     }
-    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
+    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication, Shared>> {
         let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
-        INSArray::into_vec(applications_ptr)
+        INSArray::into_vec(applications_ptr).iter().map(|a| a.share()).collect()
     }
-    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
+    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow, Shared>> {
         let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
             unsafe { Id::from_ptr(msg_send![self, windows]) };
 
-        INSArray::into_vec(windows_ptr)
+        INSArray::into_vec(windows_ptr).iter().map(|w| w.share()).collect()
     }
 }
 

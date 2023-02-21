@@ -63,14 +63,14 @@ impl UnsafeContentFilter {
                     applications,
                     windows,
                 ) => {
-                    let _: () = msg_send![self, dinitWithDisplay : display excludingApplications : NSArray::from_slice(applications) exceptingWindows:  NSArray::from_slice(windows)];
+                    let _: () = msg_send![self, initWithDisplay : display excludingApplications : NSArray::from_slice(applications) exceptingWindows:  NSArray::from_slice(windows)];
                 }
                 InitParams::DisplayExcludingApplicationsExceptingWindows(
                     display,
                     applications,
                     windows,
                 ) => {
-                    let _: () = msg_send![self, dinitWithDisplay : display includingApplications : NSArray::from_slice(applications) exceptingWindows: NSArray::from_slice(windows)];
+                    let _: () = msg_send![self, initWithDisplay : display includingApplications : NSArray::from_slice(applications) exceptingWindows: NSArray::from_slice(windows)];
                 }
             }
         };
@@ -83,14 +83,26 @@ mod test {
 
     #[test]
     fn test_init() {
-        let a = UnsafeContentFilter::new();
+        let filter = UnsafeContentFilter::new();
 
-        let display = UnsafeSCShareableContent::get()
-            .unwrap()
-            .displays()
-            .pop()
-            .unwrap()
-            .share();
-        a.init(InitParams::Display(display));
+        let sc = UnsafeSCShareableContent::get().expect("should get shareable content");
+        let windows = &sc.windows()[0..1];
+        let applications = &sc.applications()[0..2];
+        let display = sc.displays()[0];
+
+        filter.init(InitParams::Display(display));
+        filter.init(InitParams::DisplayIncludingWindows(display, windows));
+        filter.init(InitParams::DisplayExcludingWindows(display, windows));
+        filter.init(InitParams::DesktopIndependentWindow(windows[0]));
+        filter.init(InitParams::DisplayIncludingApplicationsExceptingWindows(
+            display,
+            applications,
+            windows,
+        ));
+        filter.init(InitParams::DisplayIncludingApplicationsExceptingWindows(
+            display,
+            applications,
+            windows,
+        ));
     }
 }

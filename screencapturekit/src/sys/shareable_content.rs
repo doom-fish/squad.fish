@@ -37,7 +37,7 @@ impl INSObject for UnsafeSCRunningApplication {
                 .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
     }
 }
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 
@@ -174,23 +174,23 @@ impl UnsafeSCShareableContent {
         }
     }
 
-    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay, Shared>> {
+    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
         let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
             unsafe { Id::from_ptr(msg_send!(self, displays)) };
 
-        INSArray::into_vec(display_ptr).iter().map(|d| d.share()).collect()
+        INSArray::into_vec(display_ptr)
     }
-    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication, Shared>> {
+    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
         let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
             unsafe { Id::from_ptr(msg_send!(self, applications)) };
 
-        INSArray::into_vec(applications_ptr).iter().map(|a| a.share()).collect()
+        INSArray::into_vec(applications_ptr)
     }
-    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow, Shared>> {
+    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
         let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
             unsafe { Id::from_ptr(msg_send![self, windows]) };
 
-        INSArray::into_vec(windows_ptr).iter().map(|w| w.share()).collect()
+        INSArray::into_vec(windows_ptr)
     }
 }
 

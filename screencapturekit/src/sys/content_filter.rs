@@ -2,9 +2,7 @@ use objc::{runtime::Class, *};
 use objc_foundation::{INSArray, INSObject, NSArray};
 use objc_id::{Id, Shared};
 
-use super::shareable_content::{
-    UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCShareableContent, UnsafeSCWindow,
-};
+use super::shareable_content::{UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCWindow};
 
 #[derive(Debug)]
 pub struct UnsafeContentFilter {

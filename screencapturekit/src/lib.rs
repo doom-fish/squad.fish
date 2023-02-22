@@ -3,7 +3,7 @@ mod macros;
 mod os_types;
 mod sys;
 
-use objc_id::Id;
+use objc_id::{Id, ShareId};
 
 use os_types::geometry::CGRect;
 use sys::shareable_content::{
@@ -12,14 +12,14 @@ use sys::shareable_content::{
 
 #[derive(Debug)]
 pub struct SCRunningApplication {
-    unsafe_ref: Id<UnsafeSCRunningApplication>,
+    unsafe_ref: ShareId<UnsafeSCRunningApplication>,
     pub process_id: i32,
     pub bundle_identifier: Option<String>,
     pub application_name: Option<String>,
 }
 
-impl From<Id<UnsafeSCRunningApplication>> for SCRunningApplication {
-    fn from(unsafe_ref: Id<UnsafeSCRunningApplication>) -> Self {
+impl From<ShareId<UnsafeSCRunningApplication>> for SCRunningApplication {
+    fn from(unsafe_ref: ShareId<UnsafeSCRunningApplication>) -> Self {
         SCRunningApplication {
             process_id: unsafe_ref.get_process_id(),
             bundle_identifier: unsafe_ref.get_bundle_identifier(),
@@ -31,7 +31,7 @@ impl From<Id<UnsafeSCRunningApplication>> for SCRunningApplication {
 
 #[derive(Debug)]
 pub struct SCWindow {
-    unsafe_ref: Id<UnsafeSCWindow>,
+    unsafe_ref: ShareId<UnsafeSCWindow>,
     pub title: Option<String>,
     pub owning_application: Option<SCRunningApplication>,
     pub window_id: u32,
@@ -40,8 +40,8 @@ pub struct SCWindow {
     pub is_on_screen: bool,
 }
 
-impl From<Id<UnsafeSCWindow>> for SCWindow {
-    fn from(unsafe_ref: Id<UnsafeSCWindow>) -> Self {
+impl From<ShareId<UnsafeSCWindow>> for SCWindow {
+    fn from(unsafe_ref: ShareId<UnsafeSCWindow>) -> Self {
         SCWindow {
             title: unsafe_ref.get_title(),
             window_id: unsafe_ref.get_window_id(),
@@ -58,15 +58,15 @@ impl From<Id<UnsafeSCWindow>> for SCWindow {
 
 #[derive(Debug)]
 pub struct SCDisplay {
-    unsafe_ref: Id<UnsafeSCDisplay>,
+    unsafe_ref: ShareId<UnsafeSCDisplay>,
     pub display_id: u32,
     pub frame: CGRect,
     pub width: u32,
     pub height: u32,
 }
 
-impl From<Id<UnsafeSCDisplay>> for SCDisplay {
-    fn from(unsafe_ref: Id<UnsafeSCDisplay>) -> Self {
+impl From<ShareId<UnsafeSCDisplay>> for SCDisplay {
+    fn from(unsafe_ref: ShareId<UnsafeSCDisplay>) -> Self {
         SCDisplay {
             display_id: unsafe_ref.get_display_id(),
             frame: unsafe_ref.get_frame(),

@@ -37,18 +37,18 @@ impl INSObject for UnsafeSCRunningApplication {
                 .expect("Missing SCRunningApplication class, check that the binary is linked with ScreenCaptureKit")
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct UnsafeSCWindow;
 unsafe impl Message for UnsafeSCWindow {}
 
 impl UnsafeSCWindow {
-    pub fn get_owning_application(&self) -> Option<Id<UnsafeSCRunningApplication>> {
+    pub fn get_owning_application(&self) -> Option<ShareId<UnsafeSCRunningApplication>> {
         unsafe {
             let ptr: *mut UnsafeSCRunningApplication = msg_send![self, owningApplication];
             if ptr.is_null() {
                 None
             } else {
-                Some(Id::from_ptr(ptr))
+                Some(Id::from_retained_ptr(ptr))
             }
         }
     }
@@ -119,6 +119,7 @@ pub struct ExcludingDesktopWindowsConfig<'a> {
 #[derive(Debug)]
 pub struct UnsafeSCShareableContent;
 unsafe impl Message for UnsafeSCShareableContent {}
+
 type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Object), ()>;
 impl UnsafeSCShareableContent {
     unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
@@ -174,23 +175,23 @@ impl UnsafeSCShareableContent {
         }
     }
 
-    pub fn displays(&self) -> Vec<Id<UnsafeSCDisplay>> {
-        let display_ptr: Id<NSArray<UnsafeSCDisplay>> =
-            unsafe { Id::from_ptr(msg_send!(self, displays)) };
+    pub fn displays(&self) -> Vec<ShareId<UnsafeSCDisplay>> {
+        let display_ptr: ShareId<NSArray<UnsafeSCDisplay, Shared>> =
+            unsafe { Id::from_ptr(msg_send![self, displays]) };
 
-        INSArray::into_vec(display_ptr)
+        display_ptr.to_shared_vec()
     }
-    pub fn applications(&self) -> Vec<Id<UnsafeSCRunningApplication>> {
-        let applications_ptr: Id<NSArray<UnsafeSCRunningApplication>> =
-            unsafe { Id::from_ptr(msg_send!(self, applications)) };
+    pub fn applications(&self) -> Vec<ShareId<UnsafeSCRunningApplication>> {
+        let applications_ptr: ShareId<NSArray<UnsafeSCRunningApplication, Shared>> =
+            unsafe { Id::from_ptr(msg_send![self, applications]) };
 
-        INSArray::into_vec(applications_ptr)
+        applications_ptr.to_shared_vec()
     }
-    pub fn windows(&self) -> Vec<Id<UnsafeSCWindow>> {
-        let windows_ptr: Id<NSArray<UnsafeSCWindow>> =
+    pub fn windows(&self) -> Vec<ShareId<UnsafeSCWindow>> {
+        let windows_ptr: ShareId<NSArray<UnsafeSCWindow, Shared>> =
             unsafe { Id::from_ptr(msg_send![self, windows]) };
 
-        INSArray::into_vec(windows_ptr)
+        windows_ptr.to_shared_vec()
     }
 }
 

@@ -21,14 +21,8 @@ impl INSObject for UnsafeContentFilter {
 pub enum InitParams<'a> {
     DesktopIndependentWindow(ShareId<UnsafeSCWindow>),
     Display(ShareId<UnsafeSCDisplay>),
-    DisplayIncludingWindows(
-        ShareId<UnsafeSCDisplay>,
-        &'a [ShareId<UnsafeSCWindow>],
-    ),
-    DisplayExcludingWindows(
-        ShareId<UnsafeSCDisplay>,
-        &'a [ShareId<UnsafeSCWindow>],
-    ),
+    DisplayIncludingWindows(ShareId<UnsafeSCDisplay>, &'a [ShareId<UnsafeSCWindow>]),
+    DisplayExcludingWindows(ShareId<UnsafeSCDisplay>, &'a [ShareId<UnsafeSCWindow>]),
     DisplayIncludingApplicationsExceptingWindows(
         ShareId<UnsafeSCDisplay>,
         &'a [ShareId<UnsafeSCRunningApplication>],
@@ -41,9 +35,6 @@ pub enum InitParams<'a> {
     ),
 }
 
-
-
-
 impl UnsafeContentFilter {
     fn init(&self, params: InitParams) {
         unsafe {
@@ -55,9 +46,7 @@ impl UnsafeContentFilter {
                     let _: () = msg_send![self, initWithDesktopIndependentWindow: window];
                 }
                 InitParams::DisplayIncludingWindows(display, windows) => {
-                    
                     let _: () = msg_send![self, initWithDisplay : display includingWindows: NSArray::from_slice(windows)];
-
                 }
                 InitParams::DisplayExcludingWindows(display, windows) => {
                     let _: () = msg_send![self, initWithDisplay : display excludingWindows: NSArray::from_slice(windows)];
@@ -90,32 +79,35 @@ mod test {
     #[test]
     fn test_init() {
         let filter = UnsafeContentFilter::new();
-
         let sc = UnsafeSCShareableContent::get().expect("should get shareable content");
-        let display = sc.displays().pop().unwrap().share();
-        let windows: Vec<ShareId<UnsafeSCWindow>> =
-            sc.windows().into_iter().take(2).map(|w| w.share()).collect();
+        let applications = sc.applications();
+        let windows = sc.windows();
+        let display = sc.displays().pop().unwrap();
 
-        // let applications = sc
-        //     .applications()
-        //     .iter()
-        //     .take(2)
-        //     .map(|a| a.share())
-        //     .collect();
+        filter.init(InitParams::DisplayIncludingWindows(
+            display.clone(),
+            &windows[..],
+        ));
+        filter.init(InitParams::DisplayExcludingWindows(
+            display.clone(),
+            &windows[..2],
+        ));
+        filter.init(InitParams::DesktopIndependentWindow(windows[0].clone()));
+        filter.init(InitParams::DisplayIncludingApplicationsExceptingWindows(
+            display.clone(),
+            &applications[..2],
+            &windows[..2],
+        ));
+        filter.init(InitParams::DisplayIncludingApplicationsExceptingWindows(
+            display.clone(),
+            &applications[..2],
+            &windows[..2],
+        ));
 
-        filter.init(InitParams::Display(display.clone()));
-        filter.init(InitParams::DisplayIncludingWindows(display.clone(), &windows[..]));
-        filter.init(InitParams::DisplayExcludingWindows(display.clone(), &windows[..]));
-        // filter.init(InitParams::DesktopIndependentWindow(windows[0]));
-        // filter.init(InitParams::DisplayIncludingApplicationsExceptingWindows(
-        //     display,
-        //     applications,
-        //     windows,
-        // ));
-        // filter.init(InitParams::DisplayIncludingApplicationsExceptingWindows(
-        //     display,
-        //     applications,
-        //     windows,
-        // ));
+        drop(filter);
+        drop(sc);
+        drop(applications);
+        drop(windows);
+        drop(display);
     }
 }

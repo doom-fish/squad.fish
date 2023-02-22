@@ -1,7 +1,7 @@
 use cocoa::{
     appkit::{NSView, NSViewHeightSizable, NSViewWidthSizable},
-    base::{id, Nil},
-    foundation::{NSPoint, NSSize},
+    base::id,
+    foundation::NSPoint,
 };
 use gst::prelude::*;
 use gst_video::prelude::*;

@@ -3,12 +3,22 @@ name = "screencapturekit"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+bench = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-objc = { version = "0.2.7", features = ["exception"] }
+objc = { version = "0.2.7" }
 objc_id = "0.1.1"
 objc-foundation = "0.1.1"
 block = "0.1.0"
 #[build]
 #rustflags = ["-Z", "sanitizer=address"]
+#
+#
+[build-dependencies]
+glob = "0.3"
+cmake = "0.1"
+copy_to_output = "2.0"

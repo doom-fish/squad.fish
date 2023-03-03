@@ -68,16 +68,39 @@ impl UnsafeStreamDelegate {
 
 #[cfg(test)]
 mod stream_test {
+    use std::{
+        ffi::CString,
+        fmt::{self, Debug},
+    };
+
+    use objc::{
+        class,
+        declare::ProtocolDecl,
+        runtime::{self, Protocol},
+    };
     use objc_foundation::INSObject;
 
     use crate::sys::{
         content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfiguration,
     };
+    use objc::{
+        msg_send,
+        runtime::{Class, Object, Sel},
+        Message, *,
+    };
 
     use super::{UnsafeStream, UnsafeStreamDelegate};
-
+    #[link(name = "SCKITFIX", kind = "framework")]
+    extern "C" {}
     #[test]
     fn test_stream() {
+        unsafe {
+            let obj: Object = msg_send![class!(ImplementProtocols), alloc];
+            let mut p: Vec<&str> = Protocol::protocols().iter().map(|p| p.name()).collect();
+            p.sort();
+            p.iter().for_each(|p| println!("{:?}", p));
+        }
+        //        Protocol::protocols().into_iter().for_each(|f| println!("{:?}", f));
         let ss = UnsafeStream::new();
         let v = ss.init(
             UnsafeContentFilter::new(),

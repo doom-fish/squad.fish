@@ -1,6 +1,6 @@
 
 #import <Foundation/Foundation.h>
-#import <ScreenCaptureKit/SCStream.h>
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
 
 @interface ProtocolFix: NSObject<SCStreamOutput, SCStreamDelegate> {}
 @end

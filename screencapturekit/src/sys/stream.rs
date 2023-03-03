@@ -1,18 +1,26 @@
-use std::sync::Once;
+use std::{
+    ptr,
+    sync::{
+        mpsc::{channel, Receiver},
+        Once,
+    },
+};
 
+use block::{ConcreteBlock, RcBlock};
 use objc::{
     declare::ClassDecl,
     runtime::{Class, Object, Protocol, Sel},
     Message, *,
 };
 
-use objc_foundation::INSObject;
-use objc_id::Id;
+use objc_foundation::{INSObject, INSString, NSObject, NSString};
+use objc_id::{Id, ShareId};
 
-use super::{stream_configuration::UnsafeStreamConfiguration, content_filter::UnsafeContentFilter};
+use super::{content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfiguration};
 
 #[derive(Debug)]
-struct SCStreamHandle;
+pub struct SCStreamHandle;
+
 unsafe impl Message for SCStreamHandle {}
 
 impl INSObject for SCStreamHandle {
@@ -29,11 +37,11 @@ impl INSObject for SCStreamHandle {
             decl.add_protocol(scstream_delegate);
             decl.add_protocol(scstream_output);
 
-            extern "C" fn stream(_this: &mut Object, _cmd: Sel, test_num: u32) {
-                println!("{:?}", test_num);
+            extern "C" fn stream(_this: &mut Object, _cmd: Sel, sample: *mut Object) {
+                println!("GOT SAMPLE");
             }
             unsafe {
-                let protocol_stream: extern "C" fn(&mut Object, Sel, u32) = stream;
+                let protocol_stream: extern "C" fn(&mut Object, Sel, *mut Object) = stream;
                 decl.add_method(sel!(stream:), protocol_stream);
             }
 
@@ -43,7 +51,7 @@ impl INSObject for SCStreamHandle {
     }
 }
 
-struct UnsafeSCStream;
+pub struct UnsafeSCStream;
 unsafe impl Message for UnsafeSCStream {}
 impl INSObject for UnsafeSCStream {
     fn class() -> &'static Class {
@@ -51,21 +59,85 @@ impl INSObject for UnsafeSCStream {
             .expect("Missing SCStream class, check that the binary is linked with ScreenCaptureKit")
     }
 }
+type CompletionHandlerBlock = RcBlock<(*mut Object,), ()>;
 impl UnsafeSCStream {
-    fn init(filter: Id<UnsafeContentFilter, config: Id<UnsafeStreamConfiguration>, handle: Id<SCStreamHandle>) {
+    unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<()>) {
+        let (tx, rx) = channel();
+        let handler = ConcreteBlock::new(move |error: *mut Object| {
+            if !error.is_null() {
+                let code: *mut NSString = msg_send![error, localizedDescription];
+                eprintln!("{:?}", (*code).as_str());
+                panic!("start fail");
+            }
+
+            tx.send(()).expect("LALALA");
+        });
+        (handler.copy(), rx)
+    }
+
+    pub fn init(
+        filter: Id<UnsafeContentFilter>,
+        config: Id<UnsafeStreamConfiguration>,
+        handle: ShareId<SCStreamHandle>,
+    ) -> Id<Self> {
         let instance = UnsafeSCStream::new();
-        unsafe { let _:() = msg_send![instance, init: ]  } 
+        unsafe {
+            let _: () =
+                msg_send![instance, initWithFilter: filter  configuration: config delegate: handle];
+        }
+        instance
+    }
+    pub fn start_capture(&self) {
+        unsafe {
+            let (handler, rx) = Self::new_completion_handler();
+            let _: () = msg_send!(self, startCaptureWithCompletionHandler: handler);
+            rx.recv().expect("LALAL");
+        }
+    }
+    pub fn add_stream_output(&self, handle: ShareId<SCStreamHandle>) {
+        unsafe {
+            let nil: *mut NSObject = ptr::null_mut();
+            let _: () = msg_send!(self, addStreamOutput: handle type: 0 sampleHandlerQueue: nil  error: nil);
+        }
     }
 }
 
 #[cfg(test)]
 mod stream_test {
+    use std::{thread, time};
+
     use objc::{msg_send, runtime::Protocol, *};
     use objc_foundation::INSObject;
 
-    use super::SCStreamHandle;
+    use crate::sys::{
+        content_filter::{InitParams, UnsafeContentFilter},
+        shareable_content::UnsafeSCShareableContent,
+        stream_configuration::SCStreamConfiguration,
+    };
+
+    use super::{SCStreamHandle, UnsafeSCStream};
     #[test]
-    fn test_constructor() {
+    fn test_sc_stream() {
+        let display = UnsafeSCShareableContent::get()
+            .unwrap()
+            .displays()
+            .pop()
+            .unwrap();
+        let params = InitParams::Display(display);
+        let filter = UnsafeContentFilter::init(params);
+
+        let mut config = SCStreamConfiguration::default();
+        config.width = 100;
+        config.height = 100;
+        let handle = SCStreamHandle::new().share();
+
+        let stream = UnsafeSCStream::init(filter, config.into(), handle.clone());
+        stream.add_stream_output(handle);
+        stream.start_capture();
+        thread::sleep(time::Duration::from_millis(10_000));
+    }
+    #[test]
+    fn test_sc_stream_handle() {
         let handle = SCStreamHandle::new();
         unsafe { msg_send![handle, stream: 4] }
     }

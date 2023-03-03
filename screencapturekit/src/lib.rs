@@ -2,8 +2,9 @@
 
 
 mod macros;
-mod os_types;
-mod sys;
+
+pub mod os_types;
+pub mod sys;
 
 use objc_id::{Id, ShareId};
 

@@ -73,15 +73,15 @@ CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o: CMakeFiles/ProtocolFix.dir/flags.mak
 CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o: ProtocolFix.m
 CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o: CMakeFiles/ProtocolFix.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/pejo/projects/squad.fish/screencapturekit/protocolfix/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o -MF CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o.d -o CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o -c /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o -MF CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o.d -o CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o -c /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m
 
 CMakeFiles/ProtocolFix.dir/ProtocolFix.m.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/ProtocolFix.dir/ProtocolFix.m.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m > CMakeFiles/ProtocolFix.dir/ProtocolFix.m.i
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m > CMakeFiles/ProtocolFix.dir/ProtocolFix.m.i
 
 CMakeFiles/ProtocolFix.dir/ProtocolFix.m.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/ProtocolFix.dir/ProtocolFix.m.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m -o CMakeFiles/ProtocolFix.dir/ProtocolFix.m.s
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m -o CMakeFiles/ProtocolFix.dir/ProtocolFix.m.s
 
 # Object files for target ProtocolFix
 ProtocolFix_OBJECTS = \

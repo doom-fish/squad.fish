@@ -17,6 +17,7 @@ use objc_foundation::{INSObject, INSString, NSObject, NSString};
 use objc_id::{Id, ShareId};
 
 use super::{content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfiguration};
+use dispatch::{Queue, QueueAttribute};
 
 #[derive(Debug)]
 pub struct SCStreamHandle;
@@ -27,9 +28,6 @@ impl INSObject for SCStreamHandle {
     fn class() -> &'static Class {
         static REGISTER_UNSAFE_SC_STREAM: Once = Once::new();
         REGISTER_UNSAFE_SC_STREAM.call_once(|| {
-            // The runtime will call this method, so it has to be implemented
-            extern "C" fn class_init(_this: &Class, _cmd: Sel) {}
-
             let scstream_output = Protocol::get("SCStreamOutput").expect("Should Exist");
             let scstream_delegate = Protocol::get("SCStreamDelegate").expect("Should exist");
             let mut decl = ClassDecl::new("SCStreamHandle", class!(NSObject)).unwrap();
@@ -37,12 +35,38 @@ impl INSObject for SCStreamHandle {
             decl.add_protocol(scstream_delegate);
             decl.add_protocol(scstream_output);
 
-            extern "C" fn stream(_this: &mut Object, _cmd: Sel, sample: *mut Object) {
+            extern "C" fn stream_error(
+                _this: &mut Object,
+                _cmd: Sel,
+                _stream: *mut Object,
+                _error: *mut Object,
+            ) {
+                println!("GOT error");
+            }
+            extern "C" fn stream_sample(
+                _this: &mut Object,
+                _cmd: Sel,
+                _stream: *mut Object,
+                _sample: *mut Object,
+                _type: u8,
+            ) {
                 println!("GOT SAMPLE");
             }
             unsafe {
-                let protocol_stream: extern "C" fn(&mut Object, Sel, *mut Object) = stream;
-                decl.add_method(sel!(stream:), protocol_stream);
+                let stream_error_method: extern "C" fn(&mut Object, Sel, *mut Object, *mut Object) =
+                    stream_error;
+                let stream_sample_method: extern "C" fn(
+                    &mut Object,
+                    Sel,
+                    *mut Object,
+                    *mut Object,
+                    u8,
+                ) = stream_sample;
+                decl.add_method(sel!(stream:didStopWithError:), stream_error_method);
+                decl.add_method(
+                    sel!(stream:didOutputSampleBuffer:ofType:),
+                    stream_sample_method,
+                );
             }
 
             decl.register();
@@ -96,17 +120,22 @@ impl UnsafeSCStream {
     }
     pub fn add_stream_output(&self, handle: ShareId<SCStreamHandle>) {
         unsafe {
+            let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
             let nil: *mut NSObject = ptr::null_mut();
-            let _: () = msg_send!(self, addStreamOutput: handle type: 0 sampleHandlerQueue: nil  error: nil);
+            let _: () = msg_send!(self, addStreamOutput: &*handle type: 0 sampleHandlerQueue: queue error: NSObject::new());
         }
     }
 }
 
 #[cfg(test)]
 mod stream_test {
-    use std::{thread, time};
+    use std::{ptr, thread, time};
 
-    use objc::{msg_send, runtime::Protocol, *};
+    use objc::{
+        msg_send,
+        runtime::{Object, Protocol},
+        *,
+    };
     use objc_foundation::INSObject;
 
     use crate::sys::{
@@ -139,7 +168,10 @@ mod stream_test {
     #[test]
     fn test_sc_stream_handle() {
         let handle = SCStreamHandle::new();
-        unsafe { msg_send![handle, stream: 4] }
+        unsafe { msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: 5] }
+        unsafe {
+            msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]
+        }
     }
     #[test]
     fn test_protocols_exists() {

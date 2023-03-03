@@ -1,10 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o"
   "CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o.d"
-  "ProtocolFix.framework/ProtocolFix"
-  "ProtocolFix.framework/ProtocolFix.pdb"
-  "ProtocolFix.framework/Versions/A/Headers/ProtocolFix.h"
-  "ProtocolFix.framework/Versions/A/ProtocolFix"
+  "libProtocolFix.a"
+  "libProtocolFix.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

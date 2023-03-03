@@ -11,7 +11,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.25.2/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.25.2/CMakeSystem.cmake"
   "CMakeLists.txt"
-  "framework.plist.in"
   "/usr/local/Cellar/cmake/3.25.2/share/cmake/Modules/CMakeCInformation.cmake"
   "/usr/local/Cellar/cmake/3.25.2/share/cmake/Modules/CMakeCXXInformation.cmake"
   "/usr/local/Cellar/cmake/3.25.2/share/cmake/Modules/CMakeCommonLanguageInclude.cmake"
@@ -43,11 +42,6 @@ set(CMAKE_MAKEFILE_OUTPUTS
 
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
-  "ProtocolFix.framework/Versions/A/Resources/Info.plist"
-  "ProtocolFix.framework/Versions/Current"
-  "ProtocolFix.framework/ProtocolFix"
-  "ProtocolFix.framework/Resources"
-  "ProtocolFix.framework/Headers"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 

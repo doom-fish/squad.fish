@@ -1,3 +1,5 @@
+extern crate screencapturekit;
+
 use std::{thread, time::Duration};
 
 use objc_foundation::INSObject;
@@ -7,6 +9,8 @@ use screencapturekit::sys::{
     stream::{SCStreamHandle, UnsafeSCStream},
     stream_configuration::SCStreamConfiguration,
 };
+#[link(name = "ProtocolFix", kind = "static")]
+extern "C" {}
 
 fn main() {
     let display = UnsafeSCShareableContent::get()
@@ -23,8 +27,8 @@ fn main() {
     let handle = SCStreamHandle::new().share();
 
     let stream = UnsafeSCStream::init(filter, config.into(), handle.clone());
-    // stream.add_stream_output(handle);
-    //  stream.start_capture()
-    //
+    stream.add_stream_output(handle);
+    stream.start_capture();
+
     thread::sleep(Duration::from_millis(10_000));
 }

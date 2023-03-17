@@ -1,0 +1,13 @@
+[workspace]
+edition = "2021"
+
+
+members = [
+  "screencapturekit",
+  "tauri-plugin-gstreamer",
+  "src-tauri",
+  "gstreamer-screenshare-plugin",
+]
+
+[profile.dev]
+rpath = true

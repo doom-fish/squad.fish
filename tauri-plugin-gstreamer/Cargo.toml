@@ -16,5 +16,3 @@ objc = {version = "0.2.7"}
 cocoa = { version = "0.24.1"}
 core-graphics = {version = "0.22.3"}
 
-[profile.dev]
-rpath = true

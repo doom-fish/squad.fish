@@ -54,16 +54,16 @@ RM = /usr/local/Cellar/cmake/3.25.2/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/pejo/projects/squad.fish/screencapturekit/protocolfix
+CMAKE_SOURCE_DIR = /Users/pejo/projects/squad.fish/screencapturekit-sys/protocolfix
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/pejo/projects/squad.fish/screencapturekit/protocolfix
+CMAKE_BINARY_DIR = /Users/pejo/projects/squad.fish/screencapturekit-sys
 
 #=============================================================================
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/ProtocolFix.dir/all
+all: CMakeFiles/protocol_fix.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,34 +71,34 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/ProtocolFix.dir/clean
+clean: CMakeFiles/protocol_fix.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/ProtocolFix.dir
+# Target rules for target CMakeFiles/protocol_fix.dir
 
 # All Build rule for target.
-CMakeFiles/ProtocolFix.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ProtocolFix.dir/build.make CMakeFiles/ProtocolFix.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ProtocolFix.dir/build.make CMakeFiles/ProtocolFix.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/pejo/projects/squad.fish/screencapturekit/protocolfix/CMakeFiles --progress-num=1,2 "Built target ProtocolFix"
-.PHONY : CMakeFiles/ProtocolFix.dir/all
+CMakeFiles/protocol_fix.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/protocol_fix.dir/build.make CMakeFiles/protocol_fix.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/protocol_fix.dir/build.make CMakeFiles/protocol_fix.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/pejo/projects/squad.fish/screencapturekit-sys/CMakeFiles --progress-num=1,2 "Built target protocol_fix"
+.PHONY : CMakeFiles/protocol_fix.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/ProtocolFix.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/ProtocolFix.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/pejo/projects/squad.fish/screencapturekit/protocolfix/CMakeFiles 0
-.PHONY : CMakeFiles/ProtocolFix.dir/rule
+CMakeFiles/protocol_fix.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/pejo/projects/squad.fish/screencapturekit-sys/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/protocol_fix.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/pejo/projects/squad.fish/screencapturekit-sys/CMakeFiles 0
+.PHONY : CMakeFiles/protocol_fix.dir/rule
 
 # Convenience name for target.
-ProtocolFix: CMakeFiles/ProtocolFix.dir/rule
-.PHONY : ProtocolFix
+protocol_fix: CMakeFiles/protocol_fix.dir/rule
+.PHONY : protocol_fix
 
 # clean rule for target.
-CMakeFiles/ProtocolFix.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/ProtocolFix.dir/build.make CMakeFiles/ProtocolFix.dir/clean
-.PHONY : CMakeFiles/ProtocolFix.dir/clean
+CMakeFiles/protocol_fix.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/protocol_fix.dir/build.make CMakeFiles/protocol_fix.dir/clean
+.PHONY : CMakeFiles/protocol_fix.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

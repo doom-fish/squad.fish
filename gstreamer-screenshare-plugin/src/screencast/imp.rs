@@ -69,7 +69,7 @@ impl ObjectSubclass for Screencast {
                 )
             })
             .build();
-            srcpad.push(buffer)
+//            srcpad.push(buffer)
         // Return an instance of our struct and also include our debug category here.
         // The debug category will be used later whenever we need to put something
         // into the debug logs

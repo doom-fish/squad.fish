@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 3.7)
 
-set(FRAMEWORK_NAME "ProtocolFix")                                # <== Set to your framework's name
+set(FRAMEWORK_NAME "protocol_fix")                                # <== Set to your framework's name
 
-project("ProtocolFix")
+project("protocol_fix")
 
 set(LIBRARY_SOURCE
   ${CMAKE_CURRENT_LIST_DIR}/ProtocolFix.h
@@ -10,7 +10,7 @@ set(LIBRARY_SOURCE
 )
 
 add_library(
-  ${FRAMEWORK_NAME} STATIC
+  ${FRAMEWORK_NAME} SHARED
     ${LIBRARY_SOURCE}
 )
 

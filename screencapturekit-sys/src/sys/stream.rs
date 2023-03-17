@@ -1,9 +1,6 @@
-use std::{
-    ptr,
-    sync::{
-        mpsc::{channel, Receiver},
-        Once,
-    },
+use std::sync::{
+    mpsc::{channel, Receiver},
+    Once,
 };
 
 use block::{ConcreteBlock, RcBlock};
@@ -74,6 +71,11 @@ impl INSObject for SCStreamHandle {
         class!(SCStreamHandle)
     }
 }
+impl SCStreamHandle {
+    pub fn init() -> Id<Self> {
+        Self::new()
+    }
+}
 
 pub struct UnsafeSCStream;
 unsafe impl Message for UnsafeSCStream {}
@@ -121,7 +123,6 @@ impl UnsafeSCStream {
     pub fn add_stream_output(&self, handle: ShareId<SCStreamHandle>) {
         unsafe {
             let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
-            let nil: *mut NSObject = ptr::null_mut();
             let _: () = msg_send!(self, addStreamOutput: &*handle type: 0 sampleHandlerQueue: queue error: NSObject::new());
         }
     }
@@ -155,9 +156,12 @@ mod stream_test {
         let params = InitParams::Display(display);
         let filter = UnsafeContentFilter::init(params);
 
-        let mut config = SCStreamConfiguration::default();
-        config.width = 100;
-        config.height = 100;
+        let config = SCStreamConfiguration {
+            width: 100,
+            height: 100,
+            ..Default::default()
+        };
+
         let handle = SCStreamHandle::new().share();
 
         let stream = UnsafeSCStream::init(filter, config.into(), handle.clone());

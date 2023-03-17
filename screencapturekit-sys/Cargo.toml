@@ -1,11 +1,13 @@
 [package]
-name = "screencapturekit"
+name = "screencapturekit-sys"
 version = "0.1.0"
 edition = "2021"
-links = "ProtocolFix"
+links = "ScreenCaptureKit"
+build = "build.rs"
 
 # See more keys and t heir definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
+crate-type = ["rlib", "dylib"]
 path = "./src/lib.rs"
 
 
@@ -13,7 +15,7 @@ path = "./src/lib.rs"
 objc = { version = "0.2.7", features = ["exception"] }
 objc_id = "0.1.1"
 objc-foundation = "0.1.1"
-block = "0.1.0"
+block = "0.1.6"
 dispatch = "0.2.0"
 
 [build-dependencies]

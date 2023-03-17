@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/pejo/projects/squad.fish/screencapturekit/protocolfix/ProtocolFix.m" "CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o" "gcc" "CMakeFiles/ProtocolFix.dir/ProtocolFix.m.o.d"
+  "/Users/pejo/projects/squad.fish/screencapturekit-sys/protocolfix/ProtocolFix.m" "CMakeFiles/protocol_fix.dir/ProtocolFix.m.o" "gcc" "CMakeFiles/protocol_fix.dir/ProtocolFix.m.o.d"
   )
 
 # Targets to which this target links.

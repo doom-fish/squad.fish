@@ -1,4 +1,4 @@
-# Install script for directory: /Users/pejo/projects/squad.fish/screencapturekit/protocolfix
+# Install script for directory: /Users/pejo/projects/squad.fish/screencapturekit-sys/protocolfix
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/Users/pejo/projects/squad.fish/screencapturekit/protocolfix/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/Users/pejo/projects/squad.fish/screencapturekit-sys/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

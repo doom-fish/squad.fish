@@ -1,16 +1,11 @@
-extern crate screencapturekit;
-
 use std::{thread, time::Duration};
 
-use objc_foundation::INSObject;
-use screencapturekit::sys::{
+use screencapturekit_sys::sys::{
     content_filter::{InitParams, UnsafeContentFilter},
     shareable_content::UnsafeSCShareableContent,
     stream::{SCStreamHandle, UnsafeSCStream},
     stream_configuration::SCStreamConfiguration,
 };
-#[link(name = "ProtocolFix", kind = "static")]
-extern "C" {}
 
 fn main() {
     let display = UnsafeSCShareableContent::get()
@@ -21,10 +16,12 @@ fn main() {
     let params = InitParams::Display(display);
     let filter = UnsafeContentFilter::init(params);
 
-    let mut config = SCStreamConfiguration::default();
-    config.width = 100;
-    config.height = 100;
-    let handle = SCStreamHandle::new().share();
+    let config = SCStreamConfiguration {
+        width: 100,
+        height: 100,
+        ..Default::default()
+    };
+    let handle = SCStreamHandle::init().share();
 
     let stream = UnsafeSCStream::init(filter, config.into(), handle.clone());
     stream.add_stream_output(handle);

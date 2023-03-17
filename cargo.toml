@@ -1,13 +1,14 @@
 [workspace]
-edition = "2021"
-
 
 members = [
-  "screencapturekit",
+  "screencapturekit-sys",
   "tauri-plugin-gstreamer",
   "src-tauri",
   "gstreamer-screenshare-plugin",
 ]
+
+[workspace.package]
+edition = "2021"
 
 [profile.dev]
 rpath = true

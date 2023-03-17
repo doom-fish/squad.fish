@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 #![allow(clippy::upper_case_acronyms)]
+#![allow(dead_code)]
 
 pub type UInt8 = ::std::ffi::c_uchar;
 pub type UInt16 = ::std::ffi::c_ushort;

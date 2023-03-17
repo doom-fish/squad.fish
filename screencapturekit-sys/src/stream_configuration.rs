@@ -9,11 +9,11 @@ use crate::os_types::{
     graphics::CGColor,
 };
 
-pub struct UnsafeStreamConfiguration;
-unsafe impl Message for UnsafeStreamConfiguration {}
-impl From<SCStreamConfiguration> for Id<UnsafeStreamConfiguration> {
-    fn from(value: SCStreamConfiguration) -> Self {
-        let unsafe_ref = UnsafeStreamConfiguration::new();
+pub struct UnsafeStreamConfigurationRef;
+unsafe impl Message for UnsafeStreamConfigurationRef {}
+impl From<UnsafeSCStreamConfiguration> for Id<UnsafeStreamConfigurationRef> {
+    fn from(value: UnsafeSCStreamConfiguration) -> Self {
+        let unsafe_ref = UnsafeStreamConfigurationRef::new();
         unsafe {
             let _: () = msg_send![unsafe_ref, setWidth: value.width];
             let _: () = msg_send![unsafe_ref, setHeight: value.height];
@@ -32,7 +32,7 @@ impl From<SCStreamConfiguration> for Id<UnsafeStreamConfiguration> {
     }
 }
 
-impl INSObject for UnsafeStreamConfiguration {
+impl INSObject for UnsafeStreamConfigurationRef {
     fn class() -> &'static Class {
         Class::get("SCStreamConfiguration")
                 .expect("Missing SCStreamConfiguration class, check that the binary is linked with ScreenCaptureKit")
@@ -40,7 +40,7 @@ impl INSObject for UnsafeStreamConfiguration {
 }
 
 #[derive(Default, Debug)]
-pub struct SCStreamConfiguration {
+pub struct UnsafeSCStreamConfiguration {
     // The width of the output.
     pub width: UInt32,
     //   The height of the output.
@@ -87,6 +87,6 @@ mod get_shareable_content {
     use super::*;
     #[test]
     fn test_from() {
-        let _: Id<UnsafeStreamConfiguration> = SCStreamConfiguration::default().into();
+        let _: Id<UnsafeStreamConfigurationRef> = UnsafeSCStreamConfiguration::default().into();
     }
 }

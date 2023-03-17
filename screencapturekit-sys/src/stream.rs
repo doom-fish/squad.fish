@@ -13,15 +13,17 @@ use objc::{
 use objc_foundation::{INSObject, INSString, NSObject, NSString};
 use objc_id::{Id, ShareId};
 
-use super::{content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfiguration};
+use super::{
+    content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfigurationRef,
+};
 use dispatch::{Queue, QueueAttribute};
 
 #[derive(Debug)]
-pub struct SCStreamHandle;
+pub struct UnsafeSCStreamHandle;
 
-unsafe impl Message for SCStreamHandle {}
+unsafe impl Message for UnsafeSCStreamHandle {}
 
-impl INSObject for SCStreamHandle {
+impl INSObject for UnsafeSCStreamHandle {
     fn class() -> &'static Class {
         static REGISTER_UNSAFE_SC_STREAM: Once = Once::new();
         REGISTER_UNSAFE_SC_STREAM.call_once(|| {
@@ -71,7 +73,7 @@ impl INSObject for SCStreamHandle {
         class!(SCStreamHandle)
     }
 }
-impl SCStreamHandle {
+impl UnsafeSCStreamHandle {
     pub fn init() -> Id<Self> {
         Self::new()
     }
@@ -103,8 +105,8 @@ impl UnsafeSCStream {
 
     pub fn init(
         filter: Id<UnsafeContentFilter>,
-        config: Id<UnsafeStreamConfiguration>,
-        handle: ShareId<SCStreamHandle>,
+        config: Id<UnsafeStreamConfigurationRef>,
+        handle: ShareId<UnsafeSCStreamHandle>,
     ) -> Id<Self> {
         let instance = UnsafeSCStream::new();
         unsafe {
@@ -120,7 +122,7 @@ impl UnsafeSCStream {
             rx.recv().expect("LALAL");
         }
     }
-    pub fn add_stream_output(&self, handle: ShareId<SCStreamHandle>) {
+    pub fn add_stream_output(&self, handle: ShareId<UnsafeSCStreamHandle>) {
         unsafe {
             let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
             let _: () = msg_send!(self, addStreamOutput: &*handle type: 0 sampleHandlerQueue: queue error: NSObject::new());
@@ -139,13 +141,13 @@ mod stream_test {
     };
     use objc_foundation::INSObject;
 
-    use crate::sys::{
-        content_filter::{InitParams, UnsafeContentFilter},
+    use crate::{
+        content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
         shareable_content::UnsafeSCShareableContent,
-        stream_configuration::SCStreamConfiguration,
+        stream_configuration::UnsafeSCStreamConfiguration,
     };
 
-    use super::{SCStreamHandle, UnsafeSCStream};
+    use super::{UnsafeSCStream, UnsafeSCStreamHandle};
     #[test]
     fn test_sc_stream() {
         let display = UnsafeSCShareableContent::get()
@@ -153,16 +155,16 @@ mod stream_test {
             .displays()
             .pop()
             .unwrap();
-        let params = InitParams::Display(display);
+        let params = UnsafeContentFilterInitParams::Display(display);
         let filter = UnsafeContentFilter::init(params);
 
-        let config = SCStreamConfiguration {
+        let config = UnsafeSCStreamConfiguration {
             width: 100,
             height: 100,
             ..Default::default()
         };
 
-        let handle = SCStreamHandle::new().share();
+        let handle = UnsafeSCStreamHandle::new().share();
 
         let stream = UnsafeSCStream::init(filter, config.into(), handle.clone());
         stream.add_stream_output(handle);
@@ -171,7 +173,7 @@ mod stream_test {
     }
     #[test]
     fn test_sc_stream_handle() {
-        let handle = SCStreamHandle::new();
+        let handle = UnsafeSCStreamHandle::new();
         unsafe { msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: 5] }
         unsafe {
             msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]

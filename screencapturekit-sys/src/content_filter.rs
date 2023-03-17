@@ -18,7 +18,7 @@ impl INSObject for UnsafeContentFilter {
         )
     }
 }
-pub enum InitParams<'a> {
+pub enum UnsafeContentFilterInitParams<'a> {
     DesktopIndependentWindow(ShareId<UnsafeSCWindow>),
     Display(ShareId<UnsafeSCDisplay>),
     DisplayIncludingWindows(ShareId<UnsafeSCDisplay>, &'a [ShareId<UnsafeSCWindow>]),
@@ -36,30 +36,30 @@ pub enum InitParams<'a> {
 }
 
 impl UnsafeContentFilter {
-    pub fn init(params: InitParams) -> Id<Self> {
+    pub fn init(params: UnsafeContentFilterInitParams) -> Id<Self> {
         let content_filter = UnsafeContentFilter::new();
         unsafe {
             match params {
-                InitParams::Display(display) => {
+                UnsafeContentFilterInitParams::Display(display) => {
                     let _: () = msg_send![content_filter, initWithDisplay: display excludingWindows: NSArray::from_slice(&[] as &[Id<UnsafeSCWindow, Shared>])];
                 }
-                InitParams::DesktopIndependentWindow(window) => {
+                UnsafeContentFilterInitParams::DesktopIndependentWindow(window) => {
                     let _: () = msg_send![content_filter, initWithDesktopIndependentWindow: window];
                 }
-                InitParams::DisplayIncludingWindows(display, windows) => {
+                UnsafeContentFilterInitParams::DisplayIncludingWindows(display, windows) => {
                     let _: () = msg_send![content_filter, initWithDisplay : display includingWindows: NSArray::from_slice(windows)];
                 }
-                InitParams::DisplayExcludingWindows(display, windows) => {
+                UnsafeContentFilterInitParams::DisplayExcludingWindows(display, windows) => {
                     let _: () = msg_send![content_filter, initWithDisplay : display excludingWindows: NSArray::from_slice(windows)];
                 }
-                InitParams::DisplayIncludingApplicationsExceptingWindows(
+                UnsafeContentFilterInitParams::DisplayIncludingApplicationsExceptingWindows(
                     display,
                     applications,
                     windows,
                 ) => {
                     let _: () = msg_send![content_filter, initWithDisplay : display excludingApplications : NSArray::from_slice(applications) exceptingWindows:  NSArray::from_slice(windows)];
                 }
-                InitParams::DisplayExcludingApplicationsExceptingWindows(
+                UnsafeContentFilterInitParams::DisplayExcludingApplicationsExceptingWindows(
                     display,
                     applications,
                     windows,
@@ -74,37 +74,42 @@ impl UnsafeContentFilter {
 #[cfg(test)]
 mod test {
 
-    use crate::sys::shareable_content::UnsafeSCShareableContent;
+    use crate::shareable_content::UnsafeSCShareableContent;
 
     use super::*;
 
     #[test]
     fn test_init() {
-        
         let sc = UnsafeSCShareableContent::get().expect("should get shareable content");
         let applications = sc.applications();
         let windows = sc.windows();
         let display = sc.displays().pop().unwrap();
 
-        UnsafeContentFilter::init(InitParams::DisplayIncludingWindows(
+        UnsafeContentFilter::init(UnsafeContentFilterInitParams::DisplayIncludingWindows(
             display.clone(),
             &windows[..],
         ));
-        UnsafeContentFilter::init(InitParams::DisplayExcludingWindows(
+        UnsafeContentFilter::init(UnsafeContentFilterInitParams::DisplayExcludingWindows(
             display.clone(),
             &windows[..2],
         ));
-        UnsafeContentFilter::init(InitParams::DesktopIndependentWindow(windows[0].clone()));
-        UnsafeContentFilter::init(InitParams::DisplayIncludingApplicationsExceptingWindows(
-            display.clone(),
-            &applications[..2],
-            &windows[..2],
+        UnsafeContentFilter::init(UnsafeContentFilterInitParams::DesktopIndependentWindow(
+            windows[0].clone(),
         ));
-        UnsafeContentFilter::init(InitParams::DisplayIncludingApplicationsExceptingWindows(
-            display.clone(),
-            &applications[..2],
-            &windows[..2],
-        ));
+        UnsafeContentFilter::init(
+            UnsafeContentFilterInitParams::DisplayIncludingApplicationsExceptingWindows(
+                display.clone(),
+                &applications[..2],
+                &windows[..2],
+            ),
+        );
+        UnsafeContentFilter::init(
+            UnsafeContentFilterInitParams::DisplayIncludingApplicationsExceptingWindows(
+                display.clone(),
+                &applications[..2],
+                &windows[..2],
+            ),
+        );
 
         drop(sc);
         drop(applications);

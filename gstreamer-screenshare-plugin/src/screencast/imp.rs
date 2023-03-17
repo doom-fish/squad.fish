@@ -32,10 +32,10 @@ pub struct Screencast {
 }
 
 impl Screencast {
-    fn src_event(self: &Self, _pad: &gst::Pad, _event: gst::Event) -> bool {
+    fn src_event(&self, _pad: &gst::Pad, _event: gst::Event) -> bool {
         true
     }
-    fn src_query(self: &Self, _pad: &gst::Pad, _query: &mut QueryRef) -> bool {
+    fn src_query(&self, _pad: &gst::Pad, _query: &mut QueryRef) -> bool {
         true
     }
 }
@@ -69,7 +69,7 @@ impl ObjectSubclass for Screencast {
                 )
             })
             .build();
-//            srcpad.push(buffer)
+        //            srcpad.push(buffer)
         // Return an instance of our struct and also include our debug category here.
         // The debug category will be used later whenever we need to put something
         // into the debug logs

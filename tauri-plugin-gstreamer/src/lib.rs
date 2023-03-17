@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use cocoa::{
     appkit::{NSView, NSViewHeightSizable, NSViewWidthSizable},
     base::id,
@@ -9,7 +10,7 @@ use gst_video::prelude::*;
 #[macro_use]
 extern crate objc;
 
-use tauri::{plugin::Plugin, Invoke, Manager, Runtime, Window};
+use tauri::{plugin::Plugin, Invoke, Runtime, Window};
 pub struct GstreamerPlugin<R: Runtime> {
     invoke_handler: Box<dyn Fn(Invoke<R>) + Send + Sync>,
 }
@@ -21,6 +22,12 @@ impl<R: Runtime> GstreamerPlugin<R> {
         Self {
             invoke_handler: Box::new(tauri::generate_handler![]),
         }
+    }
+}
+
+ impl<R: Runtime> Default for GstreamerPlugin<R> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -40,7 +47,6 @@ impl<R: Runtime> Plugin<R> for GstreamerPlugin<R> {
         pipeline.add_many(&[&src, &screen, &sink]).unwrap();
         src.link(&sink).unwrap();
         let video_overlay = sink
-            .clone()
             .dynamic_cast::<gst_video::VideoOverlay>()
             .unwrap()
             .downgrade();

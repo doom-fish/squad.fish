@@ -1,10 +1,10 @@
 use std::{thread, time::Duration};
 
-use screencapturekit_sys::sys::{
-    content_filter::{InitParams, UnsafeContentFilter},
+use screencapturekit_sys::{
+    content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
     shareable_content::UnsafeSCShareableContent,
-    stream::{SCStreamHandle, UnsafeSCStream},
-    stream_configuration::SCStreamConfiguration,
+    stream::{UnsafeSCStream, UnsafeSCStreamHandle},
+    stream_configuration::UnsafeSCStreamConfiguration,
 };
 
 fn main() {
@@ -13,15 +13,15 @@ fn main() {
         .displays()
         .pop()
         .unwrap();
-    let params = InitParams::Display(display);
+    let params = UnsafeContentFilterInitParams::Display(display);
     let filter = UnsafeContentFilter::init(params);
 
-    let config = SCStreamConfiguration {
+    let config = UnsafeSCStreamConfiguration {
         width: 100,
         height: 100,
         ..Default::default()
     };
-    let handle = SCStreamHandle::init().share();
+    let handle = UnsafeSCStreamHandle::init().share();
 
     let stream = UnsafeSCStream::init(filter, config.into(), handle.clone());
     stream.add_stream_output(handle);

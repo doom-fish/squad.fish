@@ -1,9 +1,9 @@
-use screencapturekit_sys::shareable_content::UnsafeSCRunningApplication;
+use screencapturekit_sys::{shareable_content::UnsafeSCRunningApplication, os_types::rc::ShareId};
 
 
 #[derive(Debug)]
 pub struct SCRunningApplication {
-    unsafe_ref: ShareId<UnsafeSCRunningApplication>,
+    _unsafe_ref: ShareId<UnsafeSCRunningApplication>,
     pub process_id: i32,
     pub bundle_identifier: Option<String>,
     pub application_name: Option<String>,
@@ -15,7 +15,7 @@ impl From<ShareId<UnsafeSCRunningApplication>> for SCRunningApplication {
             process_id: unsafe_ref.get_process_id(),
             bundle_identifier: unsafe_ref.get_bundle_identifier(),
             application_name: unsafe_ref.get_application_name(),
-            unsafe_ref,
+            _unsafe_ref: unsafe_ref,
         }
     }
 }

@@ -1,7 +1,11 @@
+use screencapturekit_sys::{os_types::rc::ShareId, shareable_content::UnsafeSCWindow};
+
+use crate::sc_running_application::SCRunningApplication;
+
 
 #[derive(Debug)]
 pub struct SCWindow {
-    unsafe_ref: ShareId<UnsafeSCWindow>,
+    _unsafe_ref: ShareId<UnsafeSCWindow>,
     pub title: Option<String>,
     pub owning_application: Option<SCRunningApplication>,
     pub window_id: u32,
@@ -21,7 +25,7 @@ impl From<ShareId<UnsafeSCWindow>> for SCWindow {
             owning_application: unsafe_ref
                 .get_owning_application()
                 .map(SCRunningApplication::from),
-            unsafe_ref,
+            _unsafe_ref: unsafe_ref,
         }
     }
 }

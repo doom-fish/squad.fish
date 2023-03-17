@@ -4,7 +4,7 @@ use screencapturekit_sys::{
     content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
     shareable_content::UnsafeSCShareableContent,
     stream::{UnsafeSCStream, UnsafeSCStreamHandle},
-    stream_configuration::UnsafeSCStreamConfiguration,
+    stream_configuration::UnsafeStreamConfiguration,
 };
 
 fn main() {
@@ -16,7 +16,7 @@ fn main() {
     let params = UnsafeContentFilterInitParams::Display(display);
     let filter = UnsafeContentFilter::init(params);
 
-    let config = UnsafeSCStreamConfiguration {
+    let config = UnsafeStreamConfiguration {
         width: 100,
         height: 100,
         ..Default::default()

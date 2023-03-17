@@ -18,8 +18,13 @@ use super::{
 };
 use dispatch::{Queue, QueueAttribute};
 
-#[derive(Debug)]
-pub struct UnsafeSCStreamHandle;
+pub trait UnsafeSCStreamError {}
+pub trait UnsafeSCStreamOutput {}
+
+pub struct UnsafeSCStreamHandle {
+    output: Box<dyn UnsafeSCStreamOutput>,
+    error: Box<dyn UnsafeSCStreamError>,
+}
 
 unsafe impl Message for UnsafeSCStreamHandle {}
 
@@ -35,7 +40,7 @@ impl INSObject for UnsafeSCStreamHandle {
             decl.add_protocol(scstream_output);
 
             extern "C" fn stream_error(
-                _this: &mut Object,
+                _this: &mut UnsafeSCStreamHandle,
                 _cmd: Sel,
                 _stream: *mut Object,
                 _error: *mut Object,
@@ -43,17 +48,24 @@ impl INSObject for UnsafeSCStreamHandle {
                 println!("GOT error");
             }
             extern "C" fn stream_sample(
-                _this: &mut Object,
+                this_: &mut Object,
                 _cmd: Sel,
                 _stream: *mut Object,
                 _sample: *mut Object,
                 _type: u8,
             ) {
+                let sc = unsafe {
+                    this_                
+                };
                 println!("GOT SAMPLE");
             }
             unsafe {
-                let stream_error_method: extern "C" fn(&mut Object, Sel, *mut Object, *mut Object) =
-                    stream_error;
+                let stream_error_method: extern "C" fn(
+                    &mut UnsafeSCStreamHandle,
+                    Sel,
+                    *mut Object,
+                    *mut Object,
+                ) = stream_error;
                 let stream_sample_method: extern "C" fn(
                     &mut Object,
                     Sel,
@@ -61,7 +73,7 @@ impl INSObject for UnsafeSCStreamHandle {
                     *mut Object,
                     u8,
                 ) = stream_sample;
-                decl.add_method(sel!(stream:didStopWithError:), stream_error_method);
+                // decl.add_method(sel!(stream:didStopWithError:), stream_error_method);
                 decl.add_method(
                     sel!(stream:didOutputSampleBuffer:ofType:),
                     stream_sample_method,
@@ -73,12 +85,20 @@ impl INSObject for UnsafeSCStreamHandle {
         class!(SCStreamHandle)
     }
 }
+
 impl UnsafeSCStreamHandle {
-    pub fn init() -> Id<Self> {
-        Self::new()
+    pub fn init(
+        output: Box<dyn UnsafeSCStreamOutput>,
+        error: Box<dyn UnsafeSCStreamError>,
+    ) -> Id<Self> {
+        let mut handle = Self::new();
+        handle.output = output;
+        handle.error = error;
+        handle
     }
 }
 
+#[derive(Debug)]
 pub struct UnsafeSCStream;
 unsafe impl Message for UnsafeSCStream {}
 impl INSObject for UnsafeSCStream {
@@ -144,7 +164,7 @@ mod stream_test {
     use crate::{
         content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
         shareable_content::UnsafeSCShareableContent,
-        stream_configuration::UnsafeSCStreamConfiguration,
+        stream_configuration::UnsafeStreamConfiguration,
     };
 
     use super::{UnsafeSCStream, UnsafeSCStreamHandle};
@@ -158,7 +178,7 @@ mod stream_test {
         let params = UnsafeContentFilterInitParams::Display(display);
         let filter = UnsafeContentFilter::init(params);
 
-        let config = UnsafeSCStreamConfiguration {
+        let config = UnsafeStreamConfiguration {
             width: 100,
             height: 100,
             ..Default::default()

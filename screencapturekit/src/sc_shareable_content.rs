@@ -1,16 +1,14 @@
+use screencapturekit_sys::{os_types::rc::Id, shareable_content::UnsafeSCShareableContent};
 
-use sys::shareable_content::{
-    UnsafeSCDisplay, UnsafeSCRunningApplication, UnsafeSCShareableContent, UnsafeSCWindow,
-};
+use crate::{sc_display::SCDisplay, sc_running_application::SCRunningApplication, sc_window::SCWindow};
+
+
 
 #[derive(Debug)]
 pub struct SCShareableContent {
-    unsafe_ref: Id<UnsafeSCShareableContent>,
-    #[readonly.make]
+    _unsafe_ref: Id<UnsafeSCShareableContent>,
     pub windows: Vec<SCWindow>,
-    #[readonly.make]
     pub applications: Vec<SCRunningApplication>,
-    #[readonly.make]
     pub displays: Vec<SCDisplay>,
 }
 
@@ -36,7 +34,7 @@ impl SCShareableContent {
             windows,
             applications,
             displays,
-            unsafe_ref,
+            _unsafe_ref: unsafe_ref,
         }
     }
 }

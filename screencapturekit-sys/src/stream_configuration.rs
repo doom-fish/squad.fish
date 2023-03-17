@@ -9,10 +9,11 @@ use crate::os_types::{
     graphics::CGColor,
 };
 
+#[derive(Debug)]
 pub struct UnsafeStreamConfigurationRef;
 unsafe impl Message for UnsafeStreamConfigurationRef {}
-impl From<UnsafeSCStreamConfiguration> for Id<UnsafeStreamConfigurationRef> {
-    fn from(value: UnsafeSCStreamConfiguration) -> Self {
+impl From<UnsafeStreamConfiguration> for Id<UnsafeStreamConfigurationRef> {
+    fn from(value: UnsafeStreamConfiguration) -> Self {
         let unsafe_ref = UnsafeStreamConfigurationRef::new();
         unsafe {
             let _: () = msg_send![unsafe_ref, setWidth: value.width];
@@ -40,7 +41,7 @@ impl INSObject for UnsafeStreamConfigurationRef {
 }
 
 #[derive(Default, Debug)]
-pub struct UnsafeSCStreamConfiguration {
+pub struct UnsafeStreamConfiguration {
     // The width of the output.
     pub width: UInt32,
     //   The height of the output.
@@ -87,6 +88,6 @@ mod get_shareable_content {
     use super::*;
     #[test]
     fn test_from() {
-        let _: Id<UnsafeStreamConfigurationRef> = UnsafeSCStreamConfiguration::default().into();
+        let _: Id<UnsafeStreamConfigurationRef> = UnsafeStreamConfiguration::default().into();
     }
 }

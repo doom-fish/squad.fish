@@ -1,11 +1,11 @@
-use std::{env, process::Command};
+use std::{env, process::Command, error::Error};
 fn main() -> Result<(), Box<dyn Error>> {
     let target_dir = format!("{}/protocolfix", env::var("CARGO_MANIFEST_DIR")?);
 
     // Re-runs script if any files in res are changed
+    println!("cargo:rerun-if-changed=./protocolfix/CMakeLists.txt");
     println!("cargo:rerun-if-changed=./protocolfix/ProtocolFix.h");
     println!("cargo:rerun-if-changed=./protocolfix/ProtocolFix.m");
-    println!("cargo:rerun-if-changed=./protocolfix/install_name.sh");
 
     Command::new("cmake").args(["protocolfix"]).status()?;
     Command::new("make").args(["-C", "protocolfix"]).status()?;

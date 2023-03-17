@@ -33,10 +33,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=./protocolfix/ProtocolFix.h");
     println!("cargo:rerun-if-changed=./protocolfix/ProtocolFix.m");
 
-    Command::new("cmake").args(["protocolfix"]).status()?;
+    Command::new("cmake").args(["-B", "./protocolfix", "protocolfix"]).status()?;
     Command::new("make").args(["-C", "protocolfix"]).status()?;
 
-    println!("cargo:warning=CWD {:?}", target_dir);
     std::fs::create_dir(&target_dir).unwrap_or_default();
     std::fs::copy(protocol_lib_dir, target_dir.join("libprotocol_fix.dylib"))?;
 

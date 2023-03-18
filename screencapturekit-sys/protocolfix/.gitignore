@@ -1,6 +1,0 @@
-Makefile
-CMake*
-cmake*
-!CMakeLists.txt
-*.a
-*.o

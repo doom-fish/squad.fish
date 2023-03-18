@@ -85,9 +85,13 @@ impl SCStreamConfiguration {
 #[cfg(test)]
 mod get_configuration {
 
+    use screencapturekit_sys::stream::{UnsafeSCStream, UnsafeSCStreamHandle};
+
     use super::*;
     #[test]
     fn test_configuration() {
+        println!("LALAL");
+        UnsafeSCStreamHandle::init();
         SCStreamConfiguration::new(SCStreamConfigurationParams::Size(OutputSizeConfig {
             width: 100,
             height: 100,

@@ -7,7 +7,6 @@ build = "build.rs"
 
 # See more keys and t heir definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-crate-type = ["rlib", "dylib"]
 path = "./src/lib.rs"
 
 
@@ -18,10 +17,6 @@ objc-foundation = "0.1.1"
 block = "0.1.6"
 dispatch = "0.2.0"
 
-[build-dependencies]
-glob = "0.3"
-cmake = "0.1"
-copy_to_output = "2.0"
 
 [[example]]
 name = "scstream"

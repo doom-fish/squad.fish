@@ -2,7 +2,7 @@ use std::{
     ffi::CString,
     sync::{
         mpsc::{channel, Receiver},
-        Once,
+        Arc, Once, RwLock,
     },
 };
 
@@ -15,6 +15,7 @@ use objc::{
 
 use objc_foundation::{INSObject, INSString, NSObject, NSString};
 use objc_id::{Id, ShareId};
+use once_cell::sync::Lazy;
 
 use super::{
     content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfigurationRef,
@@ -22,50 +23,24 @@ use super::{
 use dispatch::{Queue, QueueAttribute};
 
 pub trait UnsafeSCStreamError {}
-pub trait UnsafeSCStreamOutput {}
-
-pub struct UnsafeSCStreamHandle {
-    output: Box<dyn UnsafeSCStreamOutput>,
-    error: Box<dyn UnsafeSCStreamError>,
+pub trait UnsafeSCStreamOutput {
+    fn test(&self);
 }
+
+use std::collections::HashMap;
+
+static TRAITS: Lazy<RwLock<HashMap<u8, Box<dyn UnsafeSCStreamOutput + Sync + Send>>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
+
+pub struct UnsafeSCStreamHandle;
 
 unsafe impl Message for UnsafeSCStreamHandle {}
-pub fn output_protocol() -> &'static Protocol {
-    static REGISTER_CUSTOM_PROTOCOL: Once = Once::new();
 
-    REGISTER_CUSTOM_PROTOCOL.call_once(|| {
-        let mut decl = ProtocolDecl::new("StreamOutput").unwrap();
-
-        decl.add_method_description::<(*mut Object, *mut Object, u8), ()>(sel!(sstream:didOutputSampleBuffer:ofType:), false);
-
-        decl.register();
-    });
-
-    Protocol::get("StreamOutput").unwrap()
-}
-pub fn delegate_protocol() -> &'static Protocol {
-    static REGISTER_CUSTOM_PROTOCOL: Once = Once::new();
-
-    REGISTER_CUSTOM_PROTOCOL.call_once(|| {
-        let mut decl = ProtocolDecl::new("StreamDelegate").unwrap();
-
-        decl.add_method_description::<(*mut Object, *mut Object), ()>(sel!(stream:didStopWithError:), false);
-
-        decl.register();
-    });
-
-    Protocol::get("StreamDelegate").unwrap()
-}
 impl INSObject for UnsafeSCStreamHandle {
     fn class() -> &'static Class {
         static REGISTER_UNSAFE_SC_STREAM: Once = Once::new();
         REGISTER_UNSAFE_SC_STREAM.call_once(|| {
-            let scstream_delegate = delegate_protocol(); 
-            let scstream_output = output_protocol();
             let mut decl = ClassDecl::new("SCStreamHandle", class!(NSObject)).unwrap();
-
-            decl.add_protocol(scstream_delegate);
-            decl.add_protocol(scstream_output);
 
             extern "C" fn stream_error(
                 _this: &mut Object,
@@ -82,16 +57,14 @@ impl INSObject for UnsafeSCStreamHandle {
                 _sample: *mut Object,
                 _type: u8,
             ) {
-                let sc = unsafe { this_ };
+                let t = TRAITS.read().unwrap();
+                let f = t.get(&1).unwrap();
+f.test();
                 println!("GOT SAMPLE");
             }
             unsafe {
-                let stream_error_method: extern "C" fn(
-                    &mut Object,
-                    Sel,
-                    *mut Object,
-                    *mut Object,
-                ) = stream_error;
+                let stream_error_method: extern "C" fn(&mut Object, Sel, *mut Object, *mut Object) =
+                    stream_error;
 
                 let stream_sample_method: extern "C" fn(
                     &mut Object,
@@ -113,11 +86,17 @@ impl INSObject for UnsafeSCStreamHandle {
     }
 }
 
+struct UnsafeSCStreamHandle2 {}
+impl UnsafeSCStreamOutput for UnsafeSCStreamHandle2 {
+    fn test(&self) {
+        println!("HEJ");
+    }
+}
 impl UnsafeSCStreamHandle {
     pub fn init() -> Id<Self> {
         let mut handle = Self::new();
-        // handle.output = output;
-        // handle.error = error;
+        let mut t = TRAITS.write().unwrap();
+        t.insert(1, Box::new(UnsafeSCStreamHandle2{}));
         handle
     }
 }
@@ -217,15 +196,10 @@ mod stream_test {
     }
     #[test]
     fn test_sc_stream_handle() {
-        let handle = UnsafeSCStreamHandle::new();
-        unsafe { msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: ptr::null_mut() as *mut Object] }
+        let handle = UnsafeSCStreamHandle::init();
+        // unsafe { msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: ptr::null_mut() as *mut Object] }
         unsafe {
             msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]
         }
-    }
-    #[test]
-    fn test_protocols_exists() {
-        Protocol::get("SCStreamOutput").expect("Should Exist");
-        Protocol::get("SCStreamDelegate").expect("Should exist");
     }
 }

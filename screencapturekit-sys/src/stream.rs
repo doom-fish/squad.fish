@@ -1,15 +1,17 @@
+use anyhow::{anyhow, Result};
+
 use std::{
-    ffi::CString,
+    hash::Hash,
     sync::{
         mpsc::{channel, Receiver},
-        Arc, Once, RwLock,
+        Once, RwLock,
     },
 };
 
 use block::{ConcreteBlock, RcBlock};
 use objc::{
-    declare::{ClassDecl, ProtocolDecl},
-    runtime::{Class, Object, Protocol, Sel},
+    declare::ClassDecl,
+    runtime::{Class, Object, Sel},
     Message, *,
 };
 
@@ -22,17 +24,22 @@ use super::{
 };
 use dispatch::{Queue, QueueAttribute};
 
+use std::collections::HashMap;
+
+type StaticLazy<T> = Lazy<RwLock<T>>;
+type UnsafeStreamOutputTraitObject = Box<dyn UnsafeSCStreamOutput + Sync + Send>;
+type UnsafeStreamErrorDelegateTraitObject = Box<dyn UnsafeSCStreamError + Sync + Send>;
+
+static STREAM_ERROR_DELEGATES: StaticLazy<HashMap<UnsafeSCStreamHandle, UnsafeStreamErrorDelegateTraitObject>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
+
 pub trait UnsafeSCStreamError {}
 pub trait UnsafeSCStreamOutput {
     fn test(&self);
 }
 
-use std::collections::HashMap;
-
-static TRAITS: Lazy<RwLock<HashMap<u8, Box<dyn UnsafeSCStreamOutput + Sync + Send>>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
-
-pub struct UnsafeSCStreamHandle;
+#[derive(Copy, Clone, Eq, Hash, PartialEq)]
+pub struct UnsafeSCStreamHandle {}
 
 unsafe impl Message for UnsafeSCStreamHandle {}
 
@@ -41,7 +48,7 @@ impl INSObject for UnsafeSCStreamHandle {
         static REGISTER_UNSAFE_SC_STREAM: Once = Once::new();
         REGISTER_UNSAFE_SC_STREAM.call_once(|| {
             let mut decl = ClassDecl::new("SCStreamHandle", class!(NSObject)).unwrap();
-
+            decl.add_ivar::<usize>("_trait");
             extern "C" fn stream_error(
                 _this: &mut Object,
                 _cmd: Sel,
@@ -51,15 +58,15 @@ impl INSObject for UnsafeSCStreamHandle {
                 println!("GOT error");
             }
             extern "C" fn stream_sample(
-                this_: &mut Object,
+                _this: &mut Object,
                 _cmd: Sel,
                 _stream: *mut Object,
                 _sample: *mut Object,
                 _type: u8,
             ) {
-                let t = TRAITS.read().unwrap();
-                let f = t.get(&1).unwrap();
-f.test();
+                let t = STREAM_ERROR_DELEGATES.read().unwrap();
+                let key: &UnsafeSCStreamHandle = unsafe { std::mem::transmute(_this) };
+                let f = t.get(key).unwrap();
                 println!("GOT SAMPLE");
             }
             unsafe {
@@ -93,11 +100,15 @@ impl UnsafeSCStreamOutput for UnsafeSCStreamHandle2 {
     }
 }
 impl UnsafeSCStreamHandle {
-    pub fn init() -> Id<Self> {
-        let mut handle = Self::new();
-        let mut t = TRAITS.write().unwrap();
-        t.insert(1, Box::new(UnsafeSCStreamHandle2{}));
-        handle
+    pub fn init(error_handler: Option<Box<dyn UnsafeSCStreamError>>) -> Result<Id<Self>> {
+        let handle = Self::new();
+        if let Some(error) = error_handler {
+            STREAM_ERROR_DELEGATES
+                .write()
+                .map_err(|e| anyhow!("Could not get hold of lock to STREAM_HANDLES {:?}", e))?
+                .insert(*handle, error);
+        }
+        Ok(handle)
     }
 }
 
@@ -155,13 +166,10 @@ impl UnsafeSCStream {
 
 #[cfg(test)]
 mod stream_test {
+    use anyhow::Result;
     use std::{ptr, thread, time};
 
-    use objc::{
-        msg_send,
-        runtime::{Object, Protocol},
-        *,
-    };
+    use objc::{msg_send, runtime::Object, *};
     use objc_foundation::INSObject;
 
     use crate::{
@@ -195,8 +203,8 @@ mod stream_test {
         thread::sleep(time::Duration::from_millis(10_000));
     }
     #[test]
-    fn test_sc_stream_handle() {
-        let handle = UnsafeSCStreamHandle::init();
+    fn test_sc_stream_handle() -> Result<()> {
+        let handle = UnsafeSCStreamHandle::init()?;
         // unsafe { msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: ptr::null_mut() as *mut Object] }
         unsafe {
             msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]

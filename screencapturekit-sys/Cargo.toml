@@ -17,6 +17,7 @@ objc-foundation = "0.1.1"
 block = "0.1.6"
 dispatch = "0.2.0"
 once_cell = "0.2"
+anyhow = "1.0.70"
 
 [[example]]
 name = "scstream"

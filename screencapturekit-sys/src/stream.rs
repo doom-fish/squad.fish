@@ -1,10 +1,9 @@
-use anyhow::{anyhow, Result};
-
 use std::{
-    hash::Hash,
+    pin::Pin,
+    ptr::addr_of,
     sync::{
         mpsc::{channel, Receiver},
-        Once, RwLock,
+        Once,
     },
 };
 
@@ -12,33 +11,27 @@ use block::{ConcreteBlock, RcBlock};
 use objc::{
     declare::ClassDecl,
     runtime::{Class, Object, Sel},
-    Message, *,
+    Encode, Encoding, Message, *,
 };
-
-use objc_foundation::{INSObject, INSString, NSObject, NSString};
-use objc_id::{Id, ShareId};
-use once_cell::sync::Lazy;
 
 use super::{
     content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfigurationRef,
 };
 use dispatch::{Queue, QueueAttribute};
+use objc_foundation::{INSObject, INSString, NSObject, NSString};
+use objc_id::{Id, ShareId};
 
-use std::collections::HashMap;
-
-type StaticLazy<T> = Lazy<RwLock<T>>;
-type UnsafeStreamOutputTraitObject = Box<dyn UnsafeSCStreamOutput + Sync + Send>;
-type UnsafeStreamErrorDelegateTraitObject = Box<dyn UnsafeSCStreamError + Sync + Send>;
-
-static STREAM_ERROR_DELEGATES: StaticLazy<HashMap<UnsafeSCStreamHandle, UnsafeStreamErrorDelegateTraitObject>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
-
-pub trait UnsafeSCStreamError {}
-pub trait UnsafeSCStreamOutput {
-    fn test(&self);
+pub trait UnsafeSCStreamError {
+    //fn handle_error(&self, stream: &UnsafeSCStream, error: u8) {
+    //  eprintln!("ERROR!");
+    //}
 }
 
-#[derive(Copy, Clone, Eq, Hash, PartialEq)]
+pub trait UnsafeSCStreamOutput {
+    //  fn got_sample(&self, stream: &UnsafeSCStream, sample: UnsafeSCSample, type: OutputType);
+}
+
+#[repr(C)]
 pub struct UnsafeSCStreamHandle {}
 
 unsafe impl Message for UnsafeSCStreamHandle {}
@@ -48,14 +41,22 @@ impl INSObject for UnsafeSCStreamHandle {
         static REGISTER_UNSAFE_SC_STREAM: Once = Once::new();
         REGISTER_UNSAFE_SC_STREAM.call_once(|| {
             let mut decl = ClassDecl::new("SCStreamHandle", class!(NSObject)).unwrap();
-            decl.add_ivar::<usize>("_trait");
+            decl.add_ivar::<usize>("_output_handler");
+            decl.add_ivar::<usize>("_error_handler");
+
             extern "C" fn stream_error(
-                _this: &mut Object,
+                this: &mut Object,
                 _cmd: Sel,
-                _stream: *mut Object,
-                _error: *mut Object,
+                stream: *mut Object,
+                error: *mut Object,
             ) {
-                println!("GOT error");
+                unsafe {
+                    let ptr = *this.get_ivar::<usize>("_error_handler");
+                    let error_handler = addr_of!(ptr) as *const Box<&dyn UnsafeSCStreamError>;
+                    if !error_handler.is_null() {
+                        // (*error_handler).handle_error();
+                    }
+                };
             }
             extern "C" fn stream_sample(
                 _this: &mut Object,
@@ -64,10 +65,6 @@ impl INSObject for UnsafeSCStreamHandle {
                 _sample: *mut Object,
                 _type: u8,
             ) {
-                let t = STREAM_ERROR_DELEGATES.read().unwrap();
-                let key: &UnsafeSCStreamHandle = unsafe { std::mem::transmute(_this) };
-                let f = t.get(key).unwrap();
-                println!("GOT SAMPLE");
             }
             unsafe {
                 let stream_error_method: extern "C" fn(&mut Object, Sel, *mut Object, *mut Object) =
@@ -93,22 +90,35 @@ impl INSObject for UnsafeSCStreamHandle {
     }
 }
 
-struct UnsafeSCStreamHandle2 {}
-impl UnsafeSCStreamOutput for UnsafeSCStreamHandle2 {
-    fn test(&self) {
-        println!("HEJ");
-    }
-}
 impl UnsafeSCStreamHandle {
-    pub fn init(error_handler: Option<Box<dyn UnsafeSCStreamError>>) -> Result<Id<Self>> {
-        let handle = Self::new();
-        if let Some(error) = error_handler {
-            STREAM_ERROR_DELEGATES
-                .write()
-                .map_err(|e| anyhow!("Could not get hold of lock to STREAM_HANDLES {:?}", e))?
-                .insert(*handle, error);
+    fn store_output_handler(&mut self, dyn_trait: &dyn UnsafeSCStreamOutput) {
+        unsafe {
+            let obj = &mut *(self as *mut _ as *mut Object);
+            let trait_ptr = Box::into_raw(Box::new(dyn_trait));
+
+            obj.set_ivar("_output_handler", trait_ptr as usize);
         }
-        Ok(handle)
+    }
+    fn store_error_handler(&mut self, dyn_trait: &dyn UnsafeSCStreamError) {
+        unsafe {
+            let obj = &mut *(self as *mut _ as *mut Object);
+            let trait_ptr = Box::into_raw(Box::new(dyn_trait));
+
+            obj.set_ivar("_error_handler", trait_ptr as usize);
+        }
+    }
+    pub fn init(
+        error_handler: Option<impl UnsafeSCStreamError>,
+        output_handler: Option<impl UnsafeSCStreamOutput>,
+    ) -> Id<Self> {
+        let mut handle = Self::new();
+        if let Some(output_handler) = output_handler {
+            handle.store_output_handler(&output_handler);
+        }
+        if let Some(error_handler) = error_handler {
+            handle.store_error_handler(&error_handler);
+        }
+        handle
     }
 }
 
@@ -166,7 +176,6 @@ impl UnsafeSCStream {
 
 #[cfg(test)]
 mod stream_test {
-    use anyhow::Result;
     use std::{ptr, thread, time};
 
     use objc::{msg_send, runtime::Object, *};
@@ -178,8 +187,14 @@ mod stream_test {
         stream_configuration::UnsafeStreamConfiguration,
     };
 
-    use super::{UnsafeSCStream, UnsafeSCStreamHandle};
-    #[test]
+    use super::{UnsafeSCStream, UnsafeSCStreamError, UnsafeSCStreamHandle, UnsafeSCStreamOutput};
+
+    #[repr(C)]
+    struct TestHandler {}
+    impl UnsafeSCStreamError for TestHandler {}
+    impl UnsafeSCStreamOutput for TestHandler {}
+
+    //    #[test]
     fn test_sc_stream() {
         let display = UnsafeSCShareableContent::get()
             .unwrap()
@@ -203,11 +218,14 @@ mod stream_test {
         thread::sleep(time::Duration::from_millis(10_000));
     }
     #[test]
-    fn test_sc_stream_handle() -> Result<()> {
-        let handle = UnsafeSCStreamHandle::init()?;
-        // unsafe { msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: ptr::null_mut() as *mut Object] }
+    fn test_sc_stream_handle() {
+        let handle = UnsafeSCStreamHandle::init(Some(TestHandler {}), Some(TestHandler {}));
         unsafe {
-            msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]
+            msg_send![handle, stream: ptr::null_mut() as *mut Object didStopWithError: ptr::null_mut() as *mut Object]
         }
+
+        unsafe {
+            // msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]
+        };
     }
 }

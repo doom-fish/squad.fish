@@ -27,9 +27,7 @@ pub trait UnsafeSCStreamError {
     //}
 }
 
-pub trait UnsafeSCStreamOutput {
-    //  fn got_sample(&self, stream: &UnsafeSCStream, sample: UnsafeSCSample, type: OutputType);
-}
+pub trait UnsafeSCStreamOutput { fn got_sample(&self); }
 
 #[repr(C)]
 pub struct UnsafeSCStreamHandle {}

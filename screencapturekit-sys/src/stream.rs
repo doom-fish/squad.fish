@@ -76,9 +76,8 @@ mod stream_test {
         sync::{Condvar, Mutex},
     };
 
-
     use crate::{
-        content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams::Display},
+        content_filter::{UnsafeContentFilter, UnsafeInitParams::Display},
         shareable_content::UnsafeSCShareableContent,
         stream_configuration::UnsafeStreamConfiguration,
         stream_output_handler::UnsafeSCStreamOutput,
@@ -121,7 +120,6 @@ mod stream_test {
         let stream = UnsafeSCStream::init(filter, config.into(), ErrorHandler {});
         stream.add_stream_output(OutputHandler {});
         stream.start_capture();
-
 
         drop(CONDVAR.wait(M.lock()?));
         Ok(())

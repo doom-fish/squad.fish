@@ -5,7 +5,7 @@ use crate::sc_running_application::SCRunningApplication;
 
 #[derive(Debug)]
 pub struct SCWindow {
-    _unsafe_ref: ShareId<UnsafeSCWindow>,
+    pub (crate) _unsafe_ref: ShareId<UnsafeSCWindow>,
     pub title: Option<String>,
     pub owning_application: Option<SCRunningApplication>,
     pub window_id: u32,

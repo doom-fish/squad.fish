@@ -48,7 +48,7 @@ impl UnsafeSCWindow {
             if ptr.is_null() {
                 None
             } else {
-                Some(Id::from_retained_ptr(ptr))
+                Some(Id::from_ptr(ptr))
             }
         }
     }

@@ -2,7 +2,7 @@ use screencapturekit_sys::{shareable_content::UnsafeSCDisplay, os_types::{rc::Sh
 
 #[derive(Debug)]
 pub struct SCDisplay {
-    _unsafe_ref: ShareId<UnsafeSCDisplay>,
+    pub (crate) _unsafe_ref: ShareId<UnsafeSCDisplay>,
     pub display_id: u32,
     pub frame: CGRect,
     pub width: u32,

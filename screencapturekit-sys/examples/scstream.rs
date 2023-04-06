@@ -1,7 +1,7 @@
 use std::{thread, time::Duration};
 
 use screencapturekit_sys::{
-    content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
+    content_filter::{UnsafeContentFilter, UnsafeInitParams::Display},
     shareable_content::UnsafeSCShareableContent,
     stream::UnsafeSCStream,
     stream_configuration::UnsafeStreamConfiguration,
@@ -27,8 +27,7 @@ fn main() {
         .displays()
         .pop()
         .unwrap();
-    let params = UnsafeContentFilterInitParams::Display(display);
-    let filter = UnsafeContentFilter::init(params);
+    let filter = UnsafeContentFilter::init(Display(display));
 
     let config = UnsafeStreamConfiguration {
         width: 100,

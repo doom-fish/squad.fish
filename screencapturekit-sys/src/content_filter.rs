@@ -18,7 +18,8 @@ impl INSObject for UnsafeContentFilter {
         )
     }
 }
-pub enum UnsafeContentFilterInitParams<'a> {
+
+pub enum UnsafeInitParams<'a> {
     DesktopIndependentWindow(ShareId<UnsafeSCWindow>),
     Display(ShareId<UnsafeSCDisplay>),
     DisplayIncludingWindows(ShareId<UnsafeSCDisplay>, &'a [ShareId<UnsafeSCWindow>]),
@@ -36,30 +37,31 @@ pub enum UnsafeContentFilterInitParams<'a> {
 }
 
 impl UnsafeContentFilter {
-    pub fn init(params: UnsafeContentFilterInitParams) -> Id<Self> {
+    pub fn init(params: UnsafeInitParams) -> Id<Self> {
+       todo!();
         let content_filter = UnsafeContentFilter::new();
         unsafe {
             match params {
-                UnsafeContentFilterInitParams::Display(display) => {
+                UnsafeInitParams::Display(display) => {
                     let _: () = msg_send![content_filter, initWithDisplay: display excludingWindows: NSArray::from_slice(&[] as &[Id<UnsafeSCWindow, Shared>])];
                 }
-                UnsafeContentFilterInitParams::DesktopIndependentWindow(window) => {
+                UnsafeInitParams::DesktopIndependentWindow(window) => {
                     let _: () = msg_send![content_filter, initWithDesktopIndependentWindow: window];
                 }
-                UnsafeContentFilterInitParams::DisplayIncludingWindows(display, windows) => {
+                UnsafeInitParams::DisplayIncludingWindows(display, windows) => {
                     let _: () = msg_send![content_filter, initWithDisplay : display includingWindows: NSArray::from_slice(windows)];
                 }
-                UnsafeContentFilterInitParams::DisplayExcludingWindows(display, windows) => {
+                UnsafeInitParams::DisplayExcludingWindows(display, windows) => {
                     let _: () = msg_send![content_filter, initWithDisplay : display excludingWindows: NSArray::from_slice(windows)];
                 }
-                UnsafeContentFilterInitParams::DisplayIncludingApplicationsExceptingWindows(
+                UnsafeInitParams::DisplayIncludingApplicationsExceptingWindows(
                     display,
                     applications,
                     windows,
                 ) => {
                     let _: () = msg_send![content_filter, initWithDisplay : display excludingApplications : NSArray::from_slice(applications) exceptingWindows:  NSArray::from_slice(windows)];
                 }
-                UnsafeContentFilterInitParams::DisplayExcludingApplicationsExceptingWindows(
+                UnsafeInitParams::DisplayExcludingApplicationsExceptingWindows(
                     display,
                     applications,
                     windows,
@@ -85,26 +87,26 @@ mod test {
         let windows = sc.windows();
         let display = sc.displays().pop().unwrap();
 
-        UnsafeContentFilter::init(UnsafeContentFilterInitParams::DisplayIncludingWindows(
+        UnsafeContentFilter::init(UnsafeInitParams::DisplayIncludingWindows(
             display.clone(),
             &windows[..],
         ));
-        UnsafeContentFilter::init(UnsafeContentFilterInitParams::DisplayExcludingWindows(
+        UnsafeContentFilter::init(UnsafeInitParams::DisplayExcludingWindows(
             display.clone(),
             &windows[..2],
         ));
-        UnsafeContentFilter::init(UnsafeContentFilterInitParams::DesktopIndependentWindow(
+        UnsafeContentFilter::init(UnsafeInitParams::DesktopIndependentWindow(
             windows[0].clone(),
         ));
         UnsafeContentFilter::init(
-            UnsafeContentFilterInitParams::DisplayIncludingApplicationsExceptingWindows(
+            UnsafeInitParams::DisplayIncludingApplicationsExceptingWindows(
                 display.clone(),
                 &applications[..2],
                 &windows[..2],
             ),
         );
         UnsafeContentFilter::init(
-            UnsafeContentFilterInitParams::DisplayIncludingApplicationsExceptingWindows(
+            UnsafeInitParams::DisplayIncludingApplicationsExceptingWindows(
                 display.clone(),
                 &applications[..2],
                 &windows[..2],

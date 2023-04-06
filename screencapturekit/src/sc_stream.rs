@@ -1,59 +1,88 @@
-use std::marker::PhantomData;
+
 
 use screencapturekit_sys::{
     os_types::rc::Id,
-    stream::{UnsafeSCStream, UnsafeSCStreamError, UnsafeSCStreamHandle, UnsafeSCStreamOutput},
+    stream::{UnsafeSCStream, UnsafeSCStreamOutput},
 };
 
-use crate::{sc_content_filter::SCContentFilter, sc_stream_configuration::SCStreamConfiguration};
+
+
+pub trait StreamOutput {
+    fn stream_output(&self);
+}
+
+pub trait StreamErrorHandler {
+    fn on_error(&self);
+}
 
 #[derive(Debug)]
-pub struct SCStream {
+pub struct SCStream<TO: StreamOutput, TE: StreamErrorHandler> {
     pub(crate) _unsafe_ref: Id<UnsafeSCStream>,
+    output: StreamOutputWrapper<TO>,
+    error_handler: StreamErrorHandlerWrapper<TE>,
 }
 
-#[derive(Clone, Copy)]
-struct SCStreamHandle<F>
-where
-    F: Fn(),
-{
-    output: F,
-}
+impl<TO: StreamOutput, TE: StreamErrorHandler> SCStream<TO, TE> {
+    fn new() -> Self {
+        todo!();
+        // let _unsafe_ref = UnsafeSCStream::init(filter, config, todo!());
 
-impl<F> SCStreamHandle<F>
-where
-    F: Fn(),
-{
-    fn new(output: F) -> Self {
-        SCStreamHandle { output }
+
+
     }
 }
 
-impl<F> UnsafeSCStreamError for SCStreamHandle<F> where F: Fn() {}
-impl<F> UnsafeSCStreamOutput for SCStreamHandle<F>
+#[derive(Debug)]
+pub struct StreamErrorHandlerWrapper<TErrorHandler>
 where
-    F: Fn(),
+    TErrorHandler: StreamErrorHandler,
+{
+    error_handler: TErrorHandler,
+}
+
+impl<T: StreamErrorHandler> StreamErrorHandlerWrapper<T> {
+    fn new(output: T) -> Self {
+        StreamErrorHandlerWrapper {
+            error_handler: output,
+        }
+    }
+}
+
+impl<T: StreamErrorHandler> UnsafeSCStreamOutput for StreamErrorHandlerWrapper<T> {
+    fn got_sample(&self) {
+        self.error_handler.on_error();
+    }
+}
+
+#[derive(Debug)]
+pub struct StreamOutputWrapper<T: StreamOutput> {
+    output: T,
+}
+
+impl<T: StreamOutput> StreamOutputWrapper<T> {
+    fn new(output: T) -> Self {
+        StreamOutputWrapper { output }
+    }
+}
+
+impl<TOutput> UnsafeSCStreamOutput for StreamOutputWrapper<TOutput>
+where
+    TOutput: StreamOutput,
 {
     fn got_sample(&self) {
-        (self.output)()
+        self.output.stream_output();
     }
 }
-
-#[test]
-fn name() {
-    let a = Some(SCStreamHandle::new(|| {
-        println!("HEJ!");
-    }));
-
-    UnsafeSCStreamHandle::init(a, a);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    struct SomeOutputWrapper {}
+    impl StreamOutput for SomeOutputWrapper {
+        fn stream_output(&self) {}
+    }
+    #[test]
+    fn test_output_wrapper() {
+        let output_wrapper = StreamOutputWrapper::new(SomeOutputWrapper{});
+        // let tream = SCStream::new();
+    }
 }
-
-// impl SCStream {
-//     fn new(filter: SCContentFilter, config: SCStreamConfiguration) -> Self {
-//        let unsafe_sc_stream = UnsafeSCStream::new();
-//
-//         SCStream {
-//             _unsafe_ref: unsafe_sc_stream,
-//         }
-//     }
-// }

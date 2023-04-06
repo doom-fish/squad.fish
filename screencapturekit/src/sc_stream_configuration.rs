@@ -58,7 +58,7 @@ pub enum SCStreamConfigurationParams {
 
 #[derive(Debug)]
 pub struct SCStreamConfiguration {
-   pub(crate) _unsafe_ref: Id<UnsafeStreamConfigurationRef>,
+    pub(crate) _unsafe_ref: Id<UnsafeStreamConfigurationRef>,
 }
 impl SCStreamConfiguration {
     pub fn new(params: SCStreamConfigurationParams) -> Self {
@@ -84,10 +84,6 @@ impl SCStreamConfiguration {
 
 #[cfg(test)]
 mod get_configuration {
-
-    use std::any::Any;
-
-    use screencapturekit_sys::stream::{UnsafeSCStream, UnsafeSCStreamHandle};
 
     use super::*;
     #[test]

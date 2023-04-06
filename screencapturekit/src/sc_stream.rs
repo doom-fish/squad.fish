@@ -1,11 +1,6 @@
-
-
 use screencapturekit_sys::{
-    os_types::rc::Id,
-    stream::{UnsafeSCStream, UnsafeSCStreamOutput},
+    os_types::rc::Id, stream::UnsafeSCStream, stream_output_handler::UnsafeSCStreamOutput,
 };
-
-
 
 pub trait StreamOutput {
     fn stream_output(&self);
@@ -26,9 +21,6 @@ impl<TO: StreamOutput, TE: StreamErrorHandler> SCStream<TO, TE> {
     fn new() -> Self {
         todo!();
         // let _unsafe_ref = UnsafeSCStream::init(filter, config, todo!());
-
-
-
     }
 }
 
@@ -82,7 +74,7 @@ mod tests {
     }
     #[test]
     fn test_output_wrapper() {
-        let output_wrapper = StreamOutputWrapper::new(SomeOutputWrapper{});
+        let output_wrapper = StreamOutputWrapper::new(SomeOutputWrapper {});
         // let tream = SCStream::new();
     }
 }

@@ -15,7 +15,7 @@ use super::{
     content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfigurationRef,
 };
 use dispatch::{Queue, QueueAttribute};
-use objc_foundation::{INSObject, INSString, NSObject, NSString};
+use objc_foundation::{INSObject, NSObject};
 use objc_id::Id;
 
 #[derive(Debug)]
@@ -33,8 +33,8 @@ impl UnsafeSCStream {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |error: *mut Object| {
             if !error.is_null() {
-                let code: *mut NSString = msg_send![error, localizedDescription];
-                eprintln!("{:?}", (*code).as_str());
+                //  let code: *mut NSString = msg_send![error, localizedDescription];
+                //eprintln!("{:?}", (*code).as_str());
                 panic!("start fail");
             }
 
@@ -71,21 +71,30 @@ impl UnsafeSCStream {
 
 #[cfg(test)]
 mod stream_test {
-    use std::{ptr, thread, time};
-
-    use objc::{msg_send, runtime::Object, *};
+    use std::{thread, time};
 
     use crate::{
         content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
         shareable_content::UnsafeSCShareableContent,
         stream_configuration::UnsafeStreamConfiguration,
-        stream_output_handler::UnsafeSCStreamOutputHandler,
+        stream_output_handler::UnsafeSCStreamOutput,
     };
 
-    use super::UnsafeSCStreamErrorHandler;
     use super::{UnsafeSCStream, UnsafeSCStreamError};
 
-    //    #[test]
+    #[repr(C)]
+    struct TestHandler {}
+    impl UnsafeSCStreamError for TestHandler {
+        fn handle_error(&self) {
+            eprintln!("ERROR!");
+        }
+    }
+    impl UnsafeSCStreamOutput for TestHandler {
+        fn got_sample(&self) {
+            eprintln!("SAMPPLE!");
+        }
+    }
+    #[test]
     fn test_sc_stream() {
         let display = UnsafeSCShareableContent::get()
             .unwrap()
@@ -101,9 +110,9 @@ mod stream_test {
             ..Default::default()
         };
 
-        // let stream = UnsafeSCStream::init(filter, config.into(), TestHandler {});
-        // stream.add_stream_output(handle);
-        // stream.start_capture();
-        // thread::sleep(time::Duration::from_millis(10_000));
+        let stream = UnsafeSCStream::init(filter, config.into(), TestHandler {});
+        stream.add_stream_output(TestHandler {});
+        stream.start_capture();
+        thread::sleep(time::Duration::from_millis(10_000));
     }
 }

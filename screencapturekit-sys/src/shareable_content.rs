@@ -124,8 +124,13 @@ type CompletionHandlerBlock = RcBlock<(*mut UnsafeSCShareableContent, *mut Objec
 impl UnsafeSCShareableContent {
     unsafe fn new_completion_handler() -> (CompletionHandlerBlock, Receiver<Id<Self>>) {
         let (tx, rx) = channel();
-        let handler = ConcreteBlock::new(move |sc: *mut Self, _error: *mut Object| {
-            tx.send(Id::from_ptr(sc)).expect("Should work!");
+        let handler = ConcreteBlock::new(move |sc: *mut Self, error: *mut Object| {
+            if error.is_null() {
+                tx.send(Id::from_ptr(sc)).expect("Should work!");
+            } else {
+                let code: *mut NSString = msg_send![error, localizedDescription];
+                eprintln!("ERR: {:?}", (*code).as_str());
+            }
         });
         (handler.copy(), rx)
     }

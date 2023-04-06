@@ -15,7 +15,7 @@ use super::{
     content_filter::UnsafeContentFilter, stream_configuration::UnsafeStreamConfigurationRef,
 };
 use dispatch::{Queue, QueueAttribute};
-use objc_foundation::{INSObject, NSObject};
+use objc_foundation::{INSObject, INSString, NSObject, NSString};
 use objc_id::Id;
 
 #[derive(Debug)]
@@ -33,8 +33,8 @@ impl UnsafeSCStream {
         let (tx, rx) = channel();
         let handler = ConcreteBlock::new(move |error: *mut Object| {
             if !error.is_null() {
-                //  let code: *mut NSString = msg_send![error, localizedDescription];
-                //eprintln!("{:?}", (*code).as_str());
+                let code: *mut NSString = msg_send![error, localizedDescription];
+                eprintln!("{:?}", (*code).as_str());
                 panic!("start fail");
             }
 
@@ -71,10 +71,14 @@ impl UnsafeSCStream {
 
 #[cfg(test)]
 mod stream_test {
-    use std::{thread, time};
+    use std::{
+        error::Error,
+        sync::{Condvar, Mutex},
+    };
+
 
     use crate::{
-        content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams},
+        content_filter::{UnsafeContentFilter, UnsafeContentFilterInitParams::Display},
         shareable_content::UnsafeSCShareableContent,
         stream_configuration::UnsafeStreamConfiguration,
         stream_output_handler::UnsafeSCStreamOutput,
@@ -82,37 +86,44 @@ mod stream_test {
 
     use super::{UnsafeSCStream, UnsafeSCStreamError};
 
+    static CONDVAR: Condvar = Condvar::new();
+    static M: Mutex<()> = Mutex::new(());
+
     #[repr(C)]
-    struct TestHandler {}
-    impl UnsafeSCStreamError for TestHandler {
+    struct ErrorHandler {}
+    #[repr(C)]
+    struct OutputHandler {}
+    impl UnsafeSCStreamError for ErrorHandler {
         fn handle_error(&self) {
             eprintln!("ERROR!");
         }
     }
-    impl UnsafeSCStreamOutput for TestHandler {
+    impl UnsafeSCStreamOutput for OutputHandler {
         fn got_sample(&self) {
             eprintln!("SAMPPLE!");
+            CONDVAR.notify_all();
         }
     }
     #[test]
-    fn test_sc_stream() {
-        let display = UnsafeSCShareableContent::get()
-            .unwrap()
+    fn test_sc_stream() -> Result<(), Box<dyn Error>> {
+        let display = UnsafeSCShareableContent::get()?
             .displays()
             .pop()
-            .unwrap();
-        let params = UnsafeContentFilterInitParams::Display(display);
-        let filter = UnsafeContentFilter::init(params);
+            .expect("could not get display");
+
+        let filter = UnsafeContentFilter::init(Display(display));
 
         let config = UnsafeStreamConfiguration {
             width: 100,
             height: 100,
             ..Default::default()
         };
-
-        let stream = UnsafeSCStream::init(filter, config.into(), TestHandler {});
-        stream.add_stream_output(TestHandler {});
+        let stream = UnsafeSCStream::init(filter, config.into(), ErrorHandler {});
+        stream.add_stream_output(OutputHandler {});
         stream.start_capture();
-        thread::sleep(time::Duration::from_millis(10_000));
+
+
+        drop(CONDVAR.wait(M.lock()?));
+        Ok(())
     }
 }

@@ -64,7 +64,8 @@ impl UnsafeSCStream {
     pub fn add_stream_output(&self, handle: impl UnsafeSCStreamOutput) {
         unsafe {
             let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
-            let _: () = msg_send!(self, addStreamOutput: UnsafeSCStreamOutputHandler::init(handle) type: 0 sampleHandlerQueue: queue error: NSObject::new());
+            let a = UnsafeSCStreamOutputHandler::init(handle);
+            let _: () = msg_send!(self, addStreamOutput: a type: 0 sampleHandlerQueue: queue error: NSObject::new());
         }
     }
 }

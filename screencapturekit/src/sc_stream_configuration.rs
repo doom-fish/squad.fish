@@ -51,28 +51,27 @@ pub struct CaptureConfig {
     pub excludes_current_process_audio: bool,
 }
 
-pub enum SCStreamConfigurationParams {
+pub enum ConfigParams {
     Full(OutputSizeConfig, OutputCodingConfig, CaptureConfig),
-    Size(OutputSizeConfig),
+   Size { width: u32, height: u32 },
 }
+
 
 #[derive(Debug)]
 pub struct SCStreamConfiguration {
     pub(crate) _unsafe_ref: Id<UnsafeStreamConfigurationRef>,
 }
 impl SCStreamConfiguration {
-    pub fn new(params: SCStreamConfigurationParams) -> Self {
+    pub fn new(params: ConfigParams) -> Self {
         let unsafe_config = match params {
-            SCStreamConfigurationParams::Full(size, _coding, _capture) => {
-                UnsafeStreamConfiguration {
-                    width: size.width,
-                    height: size.height,
-                    ..Default::default()
-                }
-            }
-            SCStreamConfigurationParams::Size(size) => UnsafeStreamConfiguration {
+            ConfigParams::Full(size, _coding, _capture) => UnsafeStreamConfiguration {
                 width: size.width,
                 height: size.height,
+                ..Default::default()
+            },
+            ConfigParams::Size { width, height } => UnsafeStreamConfiguration {
+                width,
+                height,
                 ..Default::default()
             },
         };
@@ -88,10 +87,9 @@ mod get_configuration {
     use super::*;
     #[test]
     fn test_configuration() {
-        SCStreamConfiguration::new(SCStreamConfigurationParams::Size(OutputSizeConfig {
+        SCStreamConfiguration::new(ConfigParams::Size {
             width: 100,
             height: 100,
-            ..Default::default()
-        }));
+        });
     }
 }

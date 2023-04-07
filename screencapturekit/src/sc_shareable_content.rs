@@ -1,4 +1,4 @@
-use screencapturekit_sys::{os_types::rc::{Id, ShareId}, shareable_content::{UnsafeSCShareableContent, UnsafeSCWindow}};
+use screencapturekit_sys::{os_types::rc::Id, shareable_content::UnsafeSCShareableContent};
 
 use crate::{
     sc_display::SCDisplay, sc_running_application::SCRunningApplication, sc_window::SCWindow,
@@ -15,12 +15,12 @@ pub struct SCShareableContent {
 impl SCShareableContent {
     pub fn current() -> Self {
         let unsafe_ref = UnsafeSCShareableContent::get().unwrap();
-        
+
         let windows: Vec<SCWindow> = unsafe_ref
             .windows()
             .into_iter()
             .map(SCWindow::from).collect();
-                    
+
         let applications = unsafe_ref
             .applications()
             .into_iter()
@@ -32,7 +32,7 @@ impl SCShareableContent {
             .into_iter()
             .map(SCDisplay::from)
             .collect();
-        
+
         SCShareableContent {
             windows,
             applications,

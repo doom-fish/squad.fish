@@ -1,7 +1,7 @@
 use screencapturekit_sys::{
-    content_filter::{UnsafeContentFilter, UnsafeInitParams},
+    content_filter::{UnsafeContentFilter, UnsafeInitParams::*},
     os_types::rc::{Id, ShareId},
-    shareable_content::UnsafeSCWindow,
+    shareable_content::{UnsafeSCRunningApplication, UnsafeSCWindow},
 };
 
 use crate::{
@@ -29,23 +29,43 @@ pub enum InitParams {
         Vec<SCWindow>,
     ),
 }
+
+fn windows_to_unsafe(w: Vec<SCWindow>) -> Vec<ShareId<UnsafeSCWindow>> {
+    w.into_iter().map(|w| w._unsafe_ref).collect()
+}
+
+fn applications_to_unsafe(
+    a: Vec<SCRunningApplication>,
+) -> Vec<ShareId<UnsafeSCRunningApplication>> {
+    a.into_iter().map(|a| a._unsafe_ref).collect()
+}
+
 impl From<InitParams> for screencapturekit_sys::content_filter::UnsafeInitParams {
     fn from(value: InitParams) -> Self {
         match value {
-            InitParams::DesktopIndependentWindow(w) => {
-                UnsafeInitParams::DesktopIndependentWindow(w._unsafe_ref)
+            InitParams::DesktopIndependentWindow(w) => DesktopIndependentWindow(w._unsafe_ref),
+            InitParams::Display(d) => Display(d._unsafe_ref),
+            InitParams::DisplayIncludingWindows(d, w) => {
+                DisplayIncludingWindows(d._unsafe_ref, windows_to_unsafe(w))
             }
-            InitParams::Display(d) => UnsafeInitParams::Display(d._unsafe_ref),
-            InitParams::DisplayIncludingWindows(d, w) => UnsafeInitParams::DisplayIncludingWindows(
-                d._unsafe_ref,
-                w.into_iter().map(|w| w._unsafe_ref).collect(),
-            ),
-            InitParams::DisplayExcludingWindows(d, w) => UnsafeInitParams::DisplayExcludingWindows(
-                d._unsafe_ref,
-                w.into_iter().map(|w| w._unsafe_ref).collect(),
-            ),
-            InitParams::DisplayIncludingApplicationsExceptingWindows(d, a, w) => UnsafeInitParams::DisplayIncludingApplicationsExceptingWindows((), (), ()),
-            InitParams::DisplayExcludingApplicationsExceptingWindows(d, a, w) => todo!(),
+            InitParams::DisplayExcludingWindows(d, w) => {
+                DisplayExcludingWindows(d._unsafe_ref, windows_to_unsafe(w))
+            }
+            InitParams::DisplayIncludingApplicationsExceptingWindows(d, a, w) => {
+                DisplayIncludingApplicationsExceptingWindows(
+                    d._unsafe_ref,
+                    applications_to_unsafe(a),
+                    windows_to_unsafe(w),
+                )
+            }
+
+            InitParams::DisplayExcludingApplicationsExceptingWindows(d, a, w) => {
+                DisplayExcludingApplicationsExceptingWindows(
+                    d._unsafe_ref,
+                    applications_to_unsafe(a),
+                    windows_to_unsafe(w),
+                )
+            }
         }
     }
 }
@@ -66,6 +86,6 @@ mod tests {
     #[test]
     fn test_sc_filter() {
         let display = SCShareableContent::current().displays.pop().unwrap();
-        SCContentFilter::new(Display(&display));
+        SCContentFilter::new(Display(display));
     }
 }

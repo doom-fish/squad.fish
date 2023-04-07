@@ -3,7 +3,7 @@ use screencapturekit_sys::{shareable_content::UnsafeSCRunningApplication, os_typ
 
 #[derive(Debug)]
 pub struct SCRunningApplication {
-    _unsafe_ref: ShareId<UnsafeSCRunningApplication>,
+    pub (crate) _unsafe_ref: ShareId<UnsafeSCRunningApplication>,
     pub process_id: i32,
     pub bundle_identifier: Option<String>,
     pub application_name: Option<String>,

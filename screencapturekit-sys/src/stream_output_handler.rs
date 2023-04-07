@@ -12,6 +12,12 @@ use objc_id::Id;
 #[repr(C)]
 pub(crate) struct UnsafeSCStreamOutputHandler {}
 
+impl Drop for UnsafeSCStreamOutputHandler {
+    fn drop(&mut self) {
+        println!("dropped");
+    }
+}
+
 pub trait UnsafeSCStreamOutput {
     fn got_sample(&self);
 }

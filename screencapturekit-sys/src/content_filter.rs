@@ -73,7 +73,7 @@ impl UnsafeContentFilter {
     }
 }
 #[cfg(test)]
-mod test {
+mod test_content_filter {
 
     use crate::shareable_content::UnsafeSCShareableContent;
 

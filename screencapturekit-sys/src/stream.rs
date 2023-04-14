@@ -80,12 +80,12 @@ mod stream_test {
         content_filter::{UnsafeContentFilter, UnsafeInitParams::Display},
         shareable_content::UnsafeSCShareableContent,
         stream_configuration::UnsafeStreamConfiguration,
-        stream_output_handler::UnsafeSCStreamOutput,
+        stream_output_handler::{CMSampleBuffer, UnsafeSCStreamOutput},
     };
     struct ErrorHandler {}
     #[repr(C)]
     struct OutputHandler {
-        tx: SyncSender<()>,
+        tx: SyncSender<CMSampleBuffer>,
     }
     impl Drop for OutputHandler {
         fn drop(&mut self) {
@@ -98,9 +98,8 @@ mod stream_test {
         }
     }
     impl UnsafeSCStreamOutput for OutputHandler {
-        fn got_sample(&self) {
-            eprintln!("SAMPPLE!");
-            self.tx.send(()).unwrap();
+        fn got_sample(&self, sample: CMSampleBuffer) {
+            self.tx.send(sample).unwrap();
         }
     }
     #[test]
@@ -122,6 +121,6 @@ mod stream_test {
         let a = OutputHandler { tx };
         stream.add_stream_output(a);
         stream.start_capture();
-        rx.recv().unwrap();
+        println!("{:?}", rx.recv().unwrap());
     }
 }

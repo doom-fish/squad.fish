@@ -6,7 +6,7 @@ use screencapturekit_sys::{
     stream::UnsafeSCStream,
     stream_configuration::UnsafeStreamConfiguration,
     stream_error_handler::UnsafeSCStreamError,
-    stream_output_handler::UnsafeSCStreamOutput,
+    stream_output_handler::{CMSampleBuffer, UnsafeSCStreamOutput},
 };
 
 #[repr(C)]
@@ -17,8 +17,8 @@ impl UnsafeSCStreamError for TestHandler {
     }
 }
 impl UnsafeSCStreamOutput for TestHandler {
-    fn got_sample(&self) {
-        eprintln!("SAMPPLE!");
+    fn got_sample(&self, sample: CMSampleBuffer) {
+        eprintln!("SAMPPLE!: {:?}", sample);
     }
 }
 fn main() {

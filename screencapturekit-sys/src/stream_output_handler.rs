@@ -13,23 +13,45 @@ use objc_foundation::INSObject;
 use objc_id::Id;
 use once_cell::sync::Lazy;
 
+use crate::os_types::{
+    base::{CMTime, CMTimeValue},
+    four_char_code::FourCharCode,
+};
+
 static OUTPUTS: Lazy<RwLock<HashMap<usize, Box<dyn UnsafeSCStreamOutput + Send + Sync>>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 
 #[repr(C)]
 pub(crate) struct UnsafeSCStreamOutputHandler {}
 
-impl Drop for UnsafeSCStreamOutputHandler {
-    fn drop(&mut self) {
-        println!("dropped");
-    }
+pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
+    fn got_sample(&self, cm: CMSampleBuffer);
+}
+#[derive(Debug)]
+pub struct CMSampleBuffer {
+    pub duration: CMTimeValue,
+    pub is_valid: bool,
+    pub num_samples: u32,
+    pub format_description: CMFormatDescription,
 }
 
-pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
-    fn got_sample(&self);
+#[derive(Debug)]
+pub struct CMFormatDescription {
+    pub media_type: FourCharCode,
+    pub media_sub_type: FourCharCode,
 }
 
 unsafe impl Message for UnsafeSCStreamOutputHandler {}
+
+extern "C" {
+    pub fn CMSampleBufferDataIsReady(buffer: *mut Object) -> bool;
+    pub fn CMSampleBufferGetDuration(buffer: *mut Object) -> CMTime;
+    pub fn CMSampleBufferGetNumSamples(buffer: *mut Object) -> u32;
+    pub fn CMSampleBufferGetFormatDescription(sample: *mut Object) -> *mut Object;
+
+    pub fn CMFormatDescriptionGetMediaType(fd: *mut Object) -> u32;
+    pub fn CMFormatDescriptionGetMediaSubType(fd: *mut Object) -> u32;
+}
 
 impl INSObject for UnsafeSCStreamOutputHandler {
     fn class() -> &'static Class {
@@ -42,13 +64,24 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                 this: &mut Object,
                 _cmd: Sel,
                 _stream: *mut Object,
-                _sample: *mut Object,
-                _error: *mut Object,
+                sample: *mut Object,
+                _of_type: u8,
             ) {
                 unsafe {
                     let ptr = this.get_ivar::<usize>("_trait");
                     let h = OUTPUTS.read().unwrap();
-                    h.get(ptr).unwrap().got_sample();
+                    let fd = CMSampleBufferGetFormatDescription(sample);
+                    h.get(ptr).unwrap().got_sample(CMSampleBuffer {
+                        duration: CMSampleBufferGetDuration(sample),
+                        is_valid: CMSampleBufferDataIsReady(sample),
+                        num_samples: CMSampleBufferGetNumSamples(sample),
+                        format_description: CMFormatDescription {
+                            media_sub_type: FourCharCode::from_int(
+                                CMFormatDescriptionGetMediaSubType(fd),
+                            ),
+                            media_type: FourCharCode::from_int(CMFormatDescriptionGetMediaType(fd)),
+                        },
+                    });
                 };
             }
             unsafe {
@@ -57,7 +90,7 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                     Sel,
                     *mut Object,
                     *mut Object,
-                    *mut Object,
+                    u8,
                 ) = stream_output;
 
                 decl.add_method(
@@ -100,8 +133,8 @@ mod tests {
     #[repr(C)]
     struct TestHandler {}
     impl UnsafeSCStreamOutput for TestHandler {
-        fn got_sample(&self) {
-            println!("GOT SAMPLE!");
+        fn got_sample(&self, sample: CMSampleBuffer) {
+            println!("GOT SAMPLE! {:?}", sample);
         }
     }
 

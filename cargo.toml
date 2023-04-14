@@ -3,6 +3,7 @@
 members = [
   "screencapturekit-sys",
   "screencapturekit",
+  "doomcapture",
   "tauri-plugin-gstreamer",
   "src-tauri",
   "gstreamer-screenshare-plugin",

@@ -3,6 +3,8 @@
 #![allow(clippy::upper_case_acronyms)]
 #![allow(dead_code)]
 
+use super::four_char_code::FourCharCode;
+
 pub type UInt8 = ::std::ffi::c_uchar;
 pub type UInt16 = ::std::ffi::c_ushort;
 pub type SInt8 = ::std::ffi::c_schar;
@@ -16,7 +18,6 @@ pub type Float64 = ::std::ffi::c_double;
 pub type CGFloat = ::std::ffi::c_double;
 pub type Size = ::std::ffi::c_long;
 pub type BOOL = ::std::ffi::c_schar;
-pub type FourCharCode = UInt32;
 pub type OSType = FourCharCode;
 pub type Boolean = ::std::ffi::c_uchar;
 pub type SizeT = ::std::ffi::c_ulong;
@@ -32,7 +33,7 @@ pub const CMTIME_FLAGS_INDEFINITE: CMTimeFlags = 16;
 pub const CMTIME_FLAGS_IMPLIED_VALUE_FLAGS_MASK: CMTimeFlags = 28;
 pub type CMTimeFlags = UInt32;
 
-#[repr(C, packed(4))]
+#[repr(C)]
 #[derive(Default, Debug, Copy, Clone)]
 pub struct CMTime {
     pub value: CMTimeValue,

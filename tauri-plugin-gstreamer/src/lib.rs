@@ -6,6 +6,7 @@ use cocoa::{
 };
 use gst::prelude::*;
 use gst_video::prelude::*;
+use gst_app::prelude::*;
 
 #[macro_use]
 extern crate objc;
@@ -41,15 +42,17 @@ impl<R: Runtime> Plugin<R> for GstreamerPlugin<R> {
         gst::init().unwrap();
 
         let pipeline = gst::Pipeline::default();
-        let src = gst::ElementFactory::make("videotestsrc").build().unwrap();
-        let screen = gst::ElementFactory::make("gstscreen").build().unwrap();
+        let src = gst::ElementFactory::make("appsrc").build().unwrap();
         let sink = gst::ElementFactory::make("glimagesink").build().unwrap();
-        pipeline.add_many(&[&src, &screen, &sink]).unwrap();
+        pipeline.add_many(&[&src,  &sink]).unwrap();
         src.link(&sink).unwrap();
         let video_overlay = sink
             .dynamic_cast::<gst_video::VideoOverlay>()
             .unwrap()
             .downgrade();
+
+        let appsrc = src.dynamic_cast::<gst_app::AppSrc>().unwrap();
+//        appsrc.push_buffer();
 
         let bus = pipeline.bus().unwrap();
 

@@ -1,21 +1,18 @@
 use screencapturekit_sys::stream_output_handler::UnsafeSCStreamOutput;
 
-pub trait StreamOutput {
+pub trait StreamOutput: Sync + Send + 'static{
     fn stream_output(&self);
 }
 
-pub(crate) struct StreamOutputWrapper<'a, T: StreamOutput>(&'a T);
+pub(crate) struct StreamOutputWrapper<T: StreamOutput>(T);
 
-impl<'a, T: StreamOutput> StreamOutputWrapper<'a, T> {
-    pub fn new(output: &'a T) -> Self {
-        StreamOutputWrapper(output)
+impl<T: StreamOutput> StreamOutputWrapper<T> {
+    pub fn new(output: T) -> Self {
+        Self(output)
     }
 }
 
-impl<'a, TOutput> UnsafeSCStreamOutput for StreamOutputWrapper<'a, TOutput>
-where
-    TOutput: StreamOutput,
-{
+impl<TOutput: StreamOutput> UnsafeSCStreamOutput for StreamOutputWrapper<TOutput> {
     fn got_sample(&self) {
         self.0.stream_output();
     }

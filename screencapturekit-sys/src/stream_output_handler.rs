@@ -1,4 +1,7 @@
-use std::{ptr::addr_of, sync::Once};
+use std::{
+    collections::HashMap,
+    sync::{Once, RwLock},
+};
 
 use objc::{
     class,
@@ -8,6 +11,10 @@ use objc::{
 };
 use objc_foundation::INSObject;
 use objc_id::Id;
+use once_cell::sync::Lazy;
+
+static OUTPUTS: Lazy<RwLock<HashMap<usize, Box<dyn UnsafeSCStreamOutput + Send + Sync>>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 #[repr(C)]
 pub(crate) struct UnsafeSCStreamOutputHandler {}
@@ -18,7 +25,7 @@ impl Drop for UnsafeSCStreamOutputHandler {
     }
 }
 
-pub trait UnsafeSCStreamOutput {
+pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
     fn got_sample(&self);
 }
 
@@ -39,11 +46,9 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                 _error: *mut Object,
             ) {
                 unsafe {
-                    let ptr = *this.get_ivar::<usize>("_trait");
-                    let stream_output = addr_of!(ptr) as *const Box<&dyn UnsafeSCStreamOutput>;
-                    if !stream_output.is_null() {
-                        (*stream_output).got_sample();
-                    }
+                    let ptr = this.get_ivar::<usize>("_trait");
+                    let h = OUTPUTS.read().unwrap();
+                    h.get(ptr).unwrap().got_sample();
                 };
             }
             unsafe {
@@ -68,17 +73,20 @@ impl INSObject for UnsafeSCStreamOutputHandler {
 }
 
 impl UnsafeSCStreamOutputHandler {
-    fn store_output_handler(&mut self, output_handler: &dyn UnsafeSCStreamOutput) {
+    fn store_output_handler(&mut self, output_handler: impl UnsafeSCStreamOutput) {
         unsafe {
             let obj = &mut *(self as *mut _ as *mut Object);
-            let trait_ptr = Box::into_raw(Box::new(output_handler));
-
-            obj.set_ivar("_trait", trait_ptr as usize);
+            let hash = self.hash_code();
+            OUTPUTS
+                .write()
+                .unwrap()
+                .insert(hash, Box::new(output_handler));
+            obj.set_ivar("_trait", hash);
         }
     }
     pub fn init(output_handler: impl UnsafeSCStreamOutput) -> Id<Self> {
         let mut handle = Self::new();
-        handle.store_output_handler(&output_handler);
+        handle.store_output_handler(output_handler);
         handle
     }
 }
@@ -99,7 +107,8 @@ mod tests {
 
     #[test]
     fn test_sc_stream_output_handler() {
-        let handle = UnsafeSCStreamOutputHandler::init(TestHandler {});
+        let handle = TestHandler {};
+        let handle = UnsafeSCStreamOutputHandler::init(handle);
         let _: () = unsafe {
             msg_send![handle, stream: ptr::null_mut() as *mut Object didOutputSampleBuffer: ptr::null_mut() as *mut Object ofType: 0]
         };

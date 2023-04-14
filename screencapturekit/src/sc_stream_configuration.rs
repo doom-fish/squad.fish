@@ -53,9 +53,8 @@ pub struct CaptureConfig {
 
 pub enum ConfigParams {
     Full(OutputSizeConfig, OutputCodingConfig, CaptureConfig),
-   Size { width: u32, height: u32 },
+    Size { width: u32, height: u32 },
 }
-
 
 #[derive(Debug)]
 pub struct SCStreamConfiguration {

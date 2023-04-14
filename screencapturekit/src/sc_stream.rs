@@ -1,3 +1,4 @@
+
 use screencapturekit_sys::{os_types::rc::Id, stream::UnsafeSCStream};
 
 use crate::{
@@ -7,7 +8,6 @@ use crate::{
     sc_stream_configuration::SCStreamConfiguration,
 };
 
-#[derive(Debug)]
 pub struct SCStream {
     pub(crate) _unsafe_ref: Id<UnsafeSCStream>,
 }
@@ -26,7 +26,7 @@ impl SCStream {
             ),
         }
     }
-    pub fn add_output(&self, output: &impl StreamOutput) {
+    pub fn add_output(&mut self, output: impl StreamOutput) {
         self._unsafe_ref
             .add_stream_output(StreamOutputWrapper::new(output));
     }
@@ -38,13 +38,7 @@ impl SCStream {
 #[cfg(test)]
 mod tests {
 
-    use std::{
-        mem,
-        sync::{
-            mpsc::{channel, Sender},
-            Arc,
-        },
-    };
+    use std::sync::mpsc::{sync_channel, SyncSender};
 
     use crate::{
         sc_content_filter::InitParams::Display,
@@ -57,12 +51,13 @@ mod tests {
 
     use super::SCStream;
     struct SomeErrorHandler {}
+    #[repr(C)]
     struct SomeOutputWrapper {
-        pub tx: Sender<()>,
+        pub tx: SyncSender<()>,
     }
     impl StreamOutput for SomeOutputWrapper {
         fn stream_output(&self) {
-            println!("GOT SAMPLE !!!");
+            println!("GOT SAMPLE !!!, {:p}", &self.tx);
             self.tx.send(()).unwrap();
         }
     }
@@ -78,10 +73,10 @@ mod tests {
             width: 100,
             height: 100,
         });
-        let (tx, rx) = channel();
-        let stream = SCStream::new(filter, config, SomeErrorHandler {});
+        let (tx, rx) = sync_channel(1);
+        let mut stream = SCStream::new(filter, config, SomeErrorHandler {});
         let w = SomeOutputWrapper { tx };
-        stream.add_output(&w);
+        stream.add_output(w);
         stream.start_capture();
         rx.recv().unwrap();
     }

@@ -18,7 +18,6 @@ use dispatch::{Queue, QueueAttribute};
 use objc_foundation::{INSObject, INSString, NSObject, NSString};
 use objc_id::Id;
 
-#[derive(Debug)]
 pub struct UnsafeSCStream;
 unsafe impl Message for UnsafeSCStream {}
 impl INSObject for UnsafeSCStream {
@@ -38,7 +37,7 @@ impl UnsafeSCStream {
                 panic!("start fail");
             }
 
-            tx.send(()).expect("LALALA");
+            tx.send(()).expect("LL");
         });
         (handler.copy(), rx)
     }
@@ -49,6 +48,7 @@ impl UnsafeSCStream {
         error_handler: impl UnsafeSCStreamError,
     ) -> Id<Self> {
         let instance = UnsafeSCStream::new();
+
         unsafe {
             let _: () = msg_send![instance, initWithFilter: filter  configuration: config delegate: UnsafeSCStreamErrorHandler::init(error_handler)];
         }
@@ -62,9 +62,10 @@ impl UnsafeSCStream {
         }
     }
     pub fn add_stream_output(&self, handle: impl UnsafeSCStreamOutput) {
+        let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
+
+        let a = UnsafeSCStreamOutputHandler::init(handle);
         unsafe {
-            let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
-            let a = UnsafeSCStreamOutputHandler::init(handle);
             let _: () = msg_send!(self, addStreamOutput: a type: 0 sampleHandlerQueue: queue error: NSObject::new());
         }
     }
@@ -72,27 +73,25 @@ impl UnsafeSCStream {
 
 #[cfg(test)]
 mod stream_test {
-    use std::{
-        error::Error,
-        sync::{Condvar, Mutex},
-    };
+    use std::sync::mpsc::{sync_channel, SyncSender};
 
+    use super::{UnsafeSCStream, UnsafeSCStreamError};
     use crate::{
         content_filter::{UnsafeContentFilter, UnsafeInitParams::Display},
         shareable_content::UnsafeSCShareableContent,
         stream_configuration::UnsafeStreamConfiguration,
         stream_output_handler::UnsafeSCStreamOutput,
     };
-
-    use super::{UnsafeSCStream, UnsafeSCStreamError};
-
-    static CONDVAR: Condvar = Condvar::new();
-    static M: Mutex<()> = Mutex::new(());
-
-    #[repr(C)]
     struct ErrorHandler {}
     #[repr(C)]
-    struct OutputHandler {}
+    struct OutputHandler {
+        tx: SyncSender<()>,
+    }
+    impl Drop for OutputHandler {
+        fn drop(&mut self) {
+            println!("DROPPP");
+        }
+    }
     impl UnsafeSCStreamError for ErrorHandler {
         fn handle_error(&self) {
             eprintln!("ERROR!");
@@ -101,28 +100,28 @@ mod stream_test {
     impl UnsafeSCStreamOutput for OutputHandler {
         fn got_sample(&self) {
             eprintln!("SAMPPLE!");
-            CONDVAR.notify_all();
+            self.tx.send(()).unwrap();
         }
     }
     #[test]
-    fn test_sc_stream() -> Result<(), Box<dyn Error>> {
-        let display = UnsafeSCShareableContent::get()?
+    fn test_sc_stream() {
+        let display = UnsafeSCShareableContent::get()
+            .unwrap()
             .displays()
             .pop()
             .expect("could not get display");
 
         let filter = UnsafeContentFilter::init(Display(display));
-
         let config = UnsafeStreamConfiguration {
             width: 100,
             height: 100,
             ..Default::default()
         };
+        let (tx, rx) = sync_channel(1);
         let stream = UnsafeSCStream::init(filter, config.into(), ErrorHandler {});
-        stream.add_stream_output(OutputHandler {});
+        let a = OutputHandler { tx };
+        stream.add_stream_output(a);
         stream.start_capture();
-
-        drop(CONDVAR.wait(M.lock()?));
-        Ok(())
+        rx.recv().unwrap();
     }
 }

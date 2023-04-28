@@ -4,8 +4,7 @@ mod screencast;
 // Plugin entry point that should register all elements provided by this plugin,
 // and everything else that this plugin might provide (e.g. typefinders or device providers).
 fn plugin_init(plugin: &gst::Plugin) -> Result<(), glib::BoolError> {
-    screencast::register(plugin)?;
-    Ok(())
+    screencast::register(plugin)
 }
 
 // Static plugin metadata that is directly stored in the plugin shared object and read by GStreamer
@@ -14,7 +13,7 @@ fn plugin_init(plugin: &gst::Plugin) -> Result<(), glib::BoolError> {
 // license of the plugin, source package name, binary package name, origin where it comes from
 // and the date/time of release.
 gst::plugin_define!(
-    screen,
+    screencapturekit,
     env!("CARGO_PKG_DESCRIPTION"),
     plugin_init,
     concat!(env!("CARGO_PKG_VERSION"), "-", env!("COMMIT_ID")),

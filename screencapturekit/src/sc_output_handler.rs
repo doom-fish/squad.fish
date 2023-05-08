@@ -1,4 +1,4 @@
-use screencapturekit_sys::stream_output_handler::UnsafeSCStreamOutput;
+use screencapturekit_sys::stream_output_handler::{CMSampleBuffer, UnsafeSCStreamOutput};
 
 pub trait StreamOutput: Sync + Send + 'static {
     fn stream_output(&self);
@@ -12,12 +12,8 @@ impl<T: StreamOutput> StreamOutputWrapper<T> {
     }
 }
 
-struct SampleBuffer {
-
-}
-
 impl<TOutput: StreamOutput> UnsafeSCStreamOutput for StreamOutputWrapper<TOutput> {
-    fn got_sample(&self, ) {
+    fn got_sample(&self, sample: CMSampleBuffer) {
         self.0.stream_output();
     }
 }

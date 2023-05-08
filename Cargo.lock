@@ -1389,6 +1389,7 @@ dependencies = [
  "gstreamer-gl",
  "gstreamer-video",
  "once_cell",
+ "screencapturekit",
 ]
 
 [[package]]

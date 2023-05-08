@@ -1,7 +1,14 @@
 use screencapturekit_sys::{
-    os_types::rc::Id,
+    os_types::{four_char_code::FourCharCode, rc::Id},
     stream_configuration::{UnsafeStreamConfiguration, UnsafeStreamConfigurationRef},
 };
+
+pub static PixelFormats: [PixelFormat; 4] = [
+    PixelFormat::ARGB8888,
+    PixelFormat::ARGB2101010,
+    PixelFormat::YCbCr420f,
+    PixelFormat::YCbCr420v,
+];
 
 #[derive(Default, Debug)]
 pub struct OutputSizeConfig {
@@ -16,11 +23,31 @@ pub struct OutputSizeConfig {
     // pub background_color: Color,
 }
 
+#[derive(Copy, Clone, Debug, Default)]
+pub enum PixelFormat {
+    ARGB8888,
+    ARGB2101010,
+    YCbCr420v,
+    #[default]
+    YCbCr420f,
+}
+
+impl From<PixelFormat> for FourCharCode {
+    fn from(val: PixelFormat) -> Self {
+        match val {
+            PixelFormat::ARGB8888 => FourCharCode::from_chars(*b"BGRA"),
+            PixelFormat::ARGB2101010 => FourCharCode::from_chars(*b"l10r"),
+            PixelFormat::YCbCr420v => FourCharCode::from_chars(*b"420v"),
+            PixelFormat::YCbCr420f => FourCharCode::from_chars(*b"420f"),
+        }
+    }
+}
+
 #[derive(Default, Debug)]
 pub struct OutputCodingConfig {
     // Configuring Colors
     // A pixel format for sample buffers that a stream outputs.
-    // pub pixel_format: PixelFormat,
+    pub pixel_format: PixelFormat,
     // A color matrix to apply to the output surface.
     pub color_matrix: String,
     // A color space to use for the output buffer.

@@ -119,7 +119,10 @@ mod stream_test {
         let (tx, rx) = sync_channel(1);
         let stream = UnsafeSCStream::init(filter, config.into(), ErrorHandler {});
         let a = OutputHandler { tx };
+
+        println!("ADDING OUTPUT");
         stream.add_stream_output(a);
+        println!("start capture");
         stream.start_capture();
         println!("{:?}", rx.recv().unwrap());
     }

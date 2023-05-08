@@ -29,7 +29,8 @@ pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
 }
 #[derive(Debug)]
 pub struct CMSampleBuffer {
-    pub duration: CMTimeValue,
+    pub duration: CMTime,
+    pub presentation_timestamp: CMTime,
     pub is_valid: bool,
     pub num_samples: u32,
     pub format_description: CMFormatDescription,
@@ -44,11 +45,12 @@ pub struct CMFormatDescription {
 unsafe impl Message for UnsafeSCStreamOutputHandler {}
 
 extern "C" {
-    pub fn CMSampleBufferDataIsReady(buffer: *mut Object) -> bool;
-    pub fn CMSampleBufferGetDuration(buffer: *mut Object) -> CMTime;
-    pub fn CMSampleBufferGetNumSamples(buffer: *mut Object) -> u32;
+    pub fn CMSampleBufferDataIsReady(sample: *mut Object) -> bool;
+    pub fn CMSampleBufferGetDuration(sample: *mut Object) -> CMTime;
+    pub fn CMSampleBufferGetOutputDuration(sample: *mut Object) -> CMTime;
+    pub fn CMSampleBufferGetNumSamples(sample: *mut Object) -> u32;
     pub fn CMSampleBufferGetFormatDescription(sample: *mut Object) -> *mut Object;
-
+    pub fn CMSampleBufferGetPresentationTimeStamp(sample: *mut Object) -> CMTime;
     pub fn CMFormatDescriptionGetMediaType(fd: *mut Object) -> u32;
     pub fn CMFormatDescriptionGetMediaSubType(fd: *mut Object) -> u32;
 }
@@ -72,7 +74,8 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                     let h = OUTPUTS.read().unwrap();
                     let fd = CMSampleBufferGetFormatDescription(sample);
                     h.get(ptr).unwrap().got_sample(CMSampleBuffer {
-                        duration: CMSampleBufferGetDuration(sample),
+                        duration: CMSampleBufferGetOutputDuration(sample),
+                        presentation_timestamp: CMSampleBufferGetPresentationTimeStamp(sample),
                         is_valid: CMSampleBufferDataIsReady(sample),
                         num_samples: CMSampleBufferGetNumSamples(sample),
                         format_description: CMFormatDescription {

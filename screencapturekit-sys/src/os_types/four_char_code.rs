@@ -3,22 +3,6 @@ use std::{
     fmt::{self, Write},
 };
 
-/// A four-character code.
-///
-/// The characters are stored in big-endian byte order.
-///
-/// See [documentation](https://developer.apple.com/documentation/kernel/fourcharcode?language=objc).
-///
-/// # Examples
-///
-/// Use [`from_chars`](Self::from_chars) to create an instance from a byte
-/// string literal:
-///
-/// ```
-/// use fruity::core::FourCharCode;
-///
-/// const APPL: FourCharCode = FourCharCode::from_chars(*b"APPL");
-/// ```
 #[repr(transparent)]
 #[derive(Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct FourCharCode(u32);

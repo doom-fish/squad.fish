@@ -1,5 +1,8 @@
+use std::mem;
 
-use screencapturekit_sys::{os_types::rc::Id, stream::UnsafeSCStream};
+use screencapturekit_sys::{
+    content_filter::UnsafeContentFilter, os_types::rc::Id, stream::UnsafeSCStream,
+};
 
 use crate::{
     sc_content_filter::SCContentFilter,
@@ -10,6 +13,8 @@ use crate::{
 
 pub struct SCStream {
     pub(crate) _unsafe_ref: Id<UnsafeSCStream>,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl SCStream {
@@ -19,6 +24,7 @@ impl SCStream {
         handler: impl StreamErrorHandler,
     ) -> Self {
         Self {
+
             _unsafe_ref: UnsafeSCStream::init(
                 filter._unsafe_ref,
                 config._unsafe_ref,
@@ -32,6 +38,9 @@ impl SCStream {
     }
     pub fn start_capture(&self) {
         self._unsafe_ref.start_capture();
+    }
+    pub fn stop_capture(&self) {
+        self._unsafe_ref.stop_capture();
     }
 }
 

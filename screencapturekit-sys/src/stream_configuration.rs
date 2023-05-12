@@ -12,7 +12,7 @@ use crate::os_types::{
 #[derive(Debug)]
 pub struct UnsafeStreamConfigurationRef;
 unsafe impl Message for UnsafeStreamConfigurationRef {}
-impl From<UnsafeStreamConfiguration> for Id<UnsafeStreamConfigurationRef> {
+impl From<UnsafeStreamConfiguration> for Option<Id<UnsafeStreamConfigurationRef>> {
     fn from(value: UnsafeStreamConfiguration) -> Self {
         let unsafe_ref = UnsafeStreamConfigurationRef::new();
         unsafe {
@@ -29,7 +29,7 @@ impl From<UnsafeStreamConfiguration> for Id<UnsafeStreamConfigurationRef> {
             // let _: () = msg_send![unsafe_ref, setQueueDepth: value.queue_depth];
             //let _: () = msg_send![unsafe_ref, setMinimumFrameInterval: value.minimum_frame_interval];
         }
-        unsafe_ref
+        Some(unsafe_ref)
     }
 }
 

@@ -8,15 +8,18 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
+use gst::ffi::{GstClockTime, GST_CLOCK_TIME_NONE};
+use gst::glib::error;
 use gst::subclass::prelude::*;
-use gst::{glib, Caps, Context};
+use gst::{error_msg, glib, loggable_error, Caps, ClockTime, Context};
 use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
 
 use gst_gl::*;
-use gst_video::VideoFormat;
+use gst_video::{VideoFormat, VideoInfo, VideoInfoBuilder};
 use once_cell::sync::Lazy;
 use screencapturekit::sc_stream::SCStream;
 use screencapturekit::sc_stream_configuration::{PixelFormat, PixelFormats};
@@ -35,13 +38,36 @@ pub struct ScreenCaptureSrc {
 impl Default for ScreenCaptureSrc {
     fn default() -> Self {
         Self {
-            state: Mutex::new(State::Stopped),
+            state: Mutex::new(State::default()),
         }
     }
 }
 static GL_MEMORY_FEATURE: &str = "memory:GLMemory";
-pub enum State {
-    Started(SCStream),
+pub struct State {\
+    latency: ClockTime,
+    last_sampling: ClockTime,
+    count: u32,
+    stage: Stage,
+    stream: Option<SCStream>,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            latency: ClockTime::NONE.unwrap(),
+            last_sampling: ClockTime::NONE.unwrap(),
+            count: Default::default(),
+            stage: Default::default(),
+            stream: Default::default(),
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum Stage {
+    Started,
+    Stopping,
+    #[default]
     Stopped,
 }
 
@@ -149,7 +175,7 @@ impl ScreenCaptureSrc {
 }
 
 extern "C" {
-    fn aaa();
+    fn FFF();
 }
 
 fn into_video_format(pixel_format: PixelFormat) -> VideoFormat {
@@ -196,50 +222,36 @@ impl BaseSrcImpl for ScreenCaptureSrc {
         self.parent_decide_allocation(query)
     }
     fn start(&self) -> Result<(), gst::ErrorMessage> {
-        //   [permissionCond lock];
-        // permissionRequestPending = NO;
-        // permissionStopRequest = NO;
-        // [permissionCond unlock];
-        //
-        // if (![self openDevice])
-        //   return NO;
-        //
-        // bufQueueLock = [[NSConditionLock alloc] initWithCondition:NO_BUFFERS];
-        // bufQueue = [[NSMutableArray alloc] initWithCapacity:BUFFER_QUEUE_SIZE];
-        // stopRequest = NO;
-        //
-        // offset = 0;
-        // latency = GST_CLOCK_TIME_NONE;
-        //
-        // lastSampling = GST_CLOCK_TIME_NONE;
-        // count = 0;
-        // fps = -1;
-        //
-        // return YES;
-        //
+        let state = self.state.lock().map_err(|err| {
+            error_msg!(
+                gst::CoreError::StateChange,
+                ("failed to receive fds: {}", err)
+            )
+        })?;
 
+        let stream = state.stream.as_ref().ok_or(error_msg!(
+            gst::CoreError::StateChange,
+            ["Could not get stream"]
+        ))?;
+
+        stream.start_capture();
         gst::info!(CAT, imp: self, "Started");
         Ok(())
     }
     fn stop(&self) -> Result<(), gst::ErrorMessage> {
-        // dispatch_sync (mainQueue, ^{ [session stopRunning]; });
-        // dispatch_sync (workerQueue, ^{});
-        //
-        // bufQueueLock = nil;
-        // bufQueue = nil;
-        //
-        // if (textureCache)
-        //   g_object_unref (textureCache);
-        // textureCache = NULL;
-        //
-        // if (ctxh)
-        //   gst_gl_context_helper_free (ctxh);
-        // ctxh = NULL;
-        //
-        // [self closeDevice];
-        //
-        // return YES;
+        let state = self.state.lock().map_err(|err| {
+            error_msg!(
+                gst::CoreError::StateChange,
+                ("failed to receive fds: {}", err)
+            )
+        })?;
 
+        let stream = state.stream.as_ref().ok_or(error_msg!(
+            gst::CoreError::StateChange,
+            ["Could not get stream"]
+        ))?;
+
+        stream.stop_capture();
         gst::info!(CAT, imp: self, "Stopped");
         Ok(())
     }
@@ -249,28 +261,15 @@ impl BaseSrcImpl for ScreenCaptureSrc {
     }
 
     fn query(&self, query: &mut gst::QueryRef) -> bool {
-        // BOOL result = NO;
-        //
-        //   if (GST_QUERY_TYPE (query) == GST_QUERY_LATENCY) {
-        //     if (input != nil && caps != NULL) {
-        //       GstClockTime min_latency, max_latency;
-        //
-        //       min_latency = max_latency = latency;
-        //       result = YES;
-        //
-        //       GST_DEBUG_OBJECT (element, "reporting latency of min %" GST_TIME_FORMAT
-        //           " max %" GST_TIME_FORMAT,
-        //           GST_TIME_ARGS (min_latency), GST_TIME_ARGS (max_latency));
-        //       gst_query_set_latency (query, TRUE, min_latency, max_latency);
-        //     }
-        //   } else {
-        //     result = GST_BASE_SRC_CLASS (parent_class)->query (baseSrc, query);
-        //   }
-        //
-        //   return result;
-
-        BaseSrcImplExt::parent_query(self, query)
+        return if let gst::QueryViewMut::Latency(ref mut q) = query.view_mut() {
+            let state = self.state.lock().expect("Should be able to aquire lock");
+            q.set(true, state.latency, Some(state.latency));
+            true
+        } else {
+            false
+        };
     }
+
     fn caps(&self, _filter: Option<&gst::Caps>) -> Option<gst::Caps> {
         let mut result = Caps::new_empty();
 
@@ -286,13 +285,11 @@ impl BaseSrcImpl for ScreenCaptureSrc {
     }
 
     fn set_caps(&self, caps: &gst::Caps) -> Result<(), gst::LoggableError> {
-        //  GstVideoInfo info;
-        //   BOOL success = YES, *successPtr = &success;
-        //
-        //   gst_video_info_init (&info);
-        //   gst_video_info_from_caps (&info, new_caps);
-        //
-        //   width = info.width;
+        let info = VideoInfo::from_caps(caps);
+        let mut state = self.state.lock().map_err(|e| {
+            loggable_error!(gst::CAT_CAPS, format!("Could not aquire state lock: {}", e))
+        })?;
+        state.width = info.width;
         //   height = info.height;
         //   format = info.finfo->format;
         //   latency = gst_util_uint64_scale (GST_SECOND, info.fps_d, info.fps_n);
@@ -306,16 +303,8 @@ impl BaseSrcImpl for ScreenCaptureSrc {
         //         dictionaryWithObject:[NSNumber numberWithInt:video_format]
         //         forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
         //
-        //     if (captureScreen) {
         //       AVCaptureScreenInput *screenInput = (AVCaptureScreenInput *)input;
         //       screenInput.minFrameDuration = CMTimeMake(info.fps_d, info.fps_n);
-        //     } else {
-        //       if (![self setDeviceCaps:&info]) {
-        //         *successPtr = NO;
-        //         return;
-        //       }
-        //     }
-        //
         //     gst_caps_replace (&caps, new_caps);
         //     GST_INFO_OBJECT (element, "configured caps %"GST_PTR_FORMAT, caps);
         //

@@ -61,6 +61,13 @@ impl UnsafeSCStream {
             rx.recv().expect("LALAL");
         }
     }
+    pub fn stop_capture(&self) {
+        unsafe {
+            let (handler, rx) = Self::new_completion_handler();
+            let _: () = msg_send!(self, stopCaptureWithCompletionHandler: handler);
+            rx.recv().expect("LALAL");
+        }
+    }
     pub fn add_stream_output(&self, handle: impl UnsafeSCStreamOutput) {
         let queue = Queue::create("fish.doom.screencapturekit", QueueAttribute::Serial);
 

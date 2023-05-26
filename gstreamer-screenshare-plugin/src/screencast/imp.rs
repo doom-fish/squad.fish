@@ -175,7 +175,7 @@ impl ScreenCaptureSrc {
 }
 
 extern "C" {
-    fn FFF();
+    fn gst_core_media_buffer_new();
 }
 
 fn into_video_format(pixel_format: PixelFormat) -> VideoFormat {

@@ -1,8 +1,4 @@
-use std::mem;
-
-use screencapturekit_sys::{
-    content_filter::UnsafeContentFilter, os_types::rc::Id, stream::UnsafeSCStream,
-};
+use screencapturekit_sys::{os_types::rc::Id, stream::UnsafeSCStream};
 
 use crate::{
     sc_content_filter::SCContentFilter,
@@ -13,8 +9,6 @@ use crate::{
 
 pub struct SCStream {
     pub(crate) _unsafe_ref: Id<UnsafeSCStream>,
-    pub width: u32,
-    pub height: u32,
 }
 
 impl SCStream {
@@ -24,10 +18,9 @@ impl SCStream {
         handler: impl StreamErrorHandler,
     ) -> Self {
         Self {
-
             _unsafe_ref: UnsafeSCStream::init(
                 filter._unsafe_ref,
-                config._unsafe_ref,
+                config.into(),
                 StreamErrorHandlerWrapper::new(handler),
             ),
         }
@@ -50,12 +43,9 @@ mod tests {
     use std::sync::mpsc::{sync_channel, SyncSender};
 
     use crate::{
-        sc_content_filter::InitParams::Display,
-        sc_content_filter::SCContentFilter,
-        sc_error_handler::StreamErrorHandler,
-        sc_output_handler::StreamOutput,
-        sc_shareable_content::SCShareableContent,
-        sc_stream_configuration::{ConfigParams, SCStreamConfiguration},
+        sc_content_filter::InitParams::Display, sc_content_filter::SCContentFilter,
+        sc_error_handler::StreamErrorHandler, sc_output_handler::StreamOutput,
+        sc_shareable_content::SCShareableContent, sc_stream_configuration::SCStreamConfiguration,
     };
 
     use super::SCStream;
@@ -78,15 +68,13 @@ mod tests {
         let mut content = SCShareableContent::current();
         let display = content.displays.pop().unwrap();
         let filter = SCContentFilter::new(Display(display));
-        let config = SCStreamConfiguration::new(ConfigParams::Size {
-            width: 100,
-            height: 100,
-        });
+        let config = SCStreamConfiguration::from_size(100, 100, false);
         let (tx, rx) = sync_channel(1);
         let mut stream = SCStream::new(filter, config, SomeErrorHandler {});
         let w = SomeOutputWrapper { tx };
         stream.add_output(w);
         stream.start_capture();
         rx.recv().unwrap();
+        stream.stop_capture();
     }
 }

@@ -1,9 +1,12 @@
-use screencapturekit_sys::{
-    os_types::{four_char_code::FourCharCode, rc::Id},
-    stream_configuration::{UnsafeStreamConfiguration, UnsafeStreamConfigurationRef},
-};
+use crate::sc_sys::base::CMTime;
+use crate::sc_sys::four_char_code::FourCharCode;
+use crate::sc_sys::geometry::CGRect;
+use crate::sc_sys::graphics::CGColor;
+use screencapturekit_sys::{stream_configuration::{
+    UnsafeStreamConfiguration, UnsafeStreamConfigurationRef,
+}, os_types::rc::Id};
 
-pub static PixelFormats: [PixelFormat; 4] = [
+pub static PIXEL_FORMATS: [PixelFormat; 4] = [
     PixelFormat::ARGB8888,
     PixelFormat::ARGB2101010,
     PixelFormat::YCbCr420f,
@@ -29,21 +32,44 @@ impl From<PixelFormat> for FourCharCode {
         }
     }
 }
-#[derive(Default, Debug, Clone, Copy)]
-pub struct SizeConfig {
-    // The width of the output.
+
+pub struct Size {
+    //   The width of the output.
     pub width: u32,
     //   The height of the output.
     pub height: u32,
     // A boolean value that indicates whether to scale the output to fit the configured width and height.
     pub scales_to_fit: bool,
-    // A background color for the output.
-    // Controlling Visibility
-    // pub background_color: Color,
 }
 
-#[derive(Default, Clone, Debug, Copy)]
-pub struct OutputCodingConfig {
+#[derive(Debug, Default)]
+pub struct SCStreamConfiguration {
+    //   The width of the output.
+    pub width: u32,
+    //   The height of the output.
+    pub height: u32,
+    // A boolean value that indicates whether to scale the output to fit the configured width and height.
+    pub scales_to_fit: bool,
+    // A rectangle that specifies the source area to capture.
+    pub source_rect: CGRect,
+    // A rectangle that specifies a destination into which to write the output.
+    pub destination_rect: CGRect,
+    // A boolean value that determines whether the cursor is visible in the stream.
+    pub shows_cursor: bool,
+    // Optimizing Performance
+    // The maximum number of frames for the queue to store.
+    pub queue_depth: u32,
+    // The desired minimum time between frame updates, in seconds.
+    pub minimum_frame_interval: CMTime,
+    // Configuring Audi
+    // A boolean value that indicates whether to capture audio.
+    pub captures_audio: bool,
+    // The sample rate for audio capture.
+    pub sample_rate: u32,
+    // The number of audio channels to capture.
+    pub channel_count: u32,
+    // A boolean value that indicates whether to exclude a
+    pub excludes_current_process_audio: bool,
     // Configuring Colors
     // A pixel format for sample buffers that a stream outputs.
     pub pixel_format: PixelFormat,
@@ -53,77 +79,47 @@ pub struct OutputCodingConfig {
     pub color_space_name: &'static str,
     // A background color for the output.
     // Controlling Visibility
-    // Todo: Implement Color struct
-    // pub background_color: Color,
+    pub background_color: CGColor,
 }
 
-#[derive(Default, Clone, Debug, Copy)]
-pub struct CaptureConfig {
-    // A boolean value that determines whether the cursor is visible in the stream.
-    pub shows_cursor: bool,
-    // Optimizing Performance
-    // The maximum number of frames for the queue to store.
-    pub queue_depth: u32,
-    // The desired minimum time between frame updates, in seconds.
-    pub minimum_frame_interval: u64,
-    // Configuring Audio
-    // A boolean value that indicates whether to capture audio.
-    pub captures_audio: bool,
-    // The sample rate for audio capture.
-    pub sample_rate: u32,
-    // The number of audio channels to capture.
-    pub channel_count: u32,
-    // A boolean value that indicates whether to exclude a
-    pub excludes_current_process_audio: bool,
-}
-pub enum ConfigParams {
-    Full(SizeConfig, OutputCodingConfig, CaptureConfig),
-    Size(SizeConfig),
-}
-
-#[derive(Debug)]
-pub struct SCStreamConfiguration {
-    pub size: SizeConfig,
-    pub capture: CaptureConfig,
-    pub output: OutputCodingConfig,
-    pub(crate) _unsafe_ref: Option<Id<UnsafeStreamConfigurationRef>>,
-}
-impl Default for SCStreamConfiguration {
-    fn default() -> Self {
+impl SCStreamConfiguration {
+    pub fn from_size(width: u32, height: u32, scales_to_fit: bool) -> Self {
         Self {
-            size: Default::default(),
-            capture: Default::default(),
-            output: Default::default(),
-            _unsafe_ref: None,
+            width,
+            height,
+            scales_to_fit,
+            ..Default::default()
         }
     }
 }
-impl SCStreamConfiguration {
-    pub fn new(params: ConfigParams) -> Self {
-        match params {
-            ConfigParams::Full(size, output, capture) => SCStreamConfiguration {
-                size,
-                output,
-                capture,
-                _unsafe_ref: UnsafeStreamConfiguration {
-                    width: size.width,
-                    height: size.height,
-                    ..Default::default()
-                }
-                .into(),
-            },
-            ConfigParams::Size(size) => SCStreamConfiguration {
-                size,
-                _unsafe_ref: UnsafeStreamConfiguration {
-                    width: size.width,
-                    height: size.height,
-                    scales_to_fit: size.scales_to_fit as i8,
-                    ..Default::default()
-                }
-                .into(),
-                ..Default::default()
-            },
+
+impl From<SCStreamConfiguration> for UnsafeStreamConfiguration {
+    fn from(value: SCStreamConfiguration) -> Self {
+        UnsafeStreamConfiguration {
+            width: value.width,
+            height: value.height,
+            scales_to_fit: value.scales_to_fit as i8,
+            source_rect: value.source_rect,
+            destination_rect: value.destination_rect,
+            pixel_format: value.pixel_format.into(),
+            color_matrix: value.color_matrix.into(),
+            color_space_name: value.color_space_name.into(),
+            background_color: value.background_color,
+            shows_cursor: value.shows_cursor as i8,
+            queue_depth: value.queue_depth,
+            minimum_frame_interval: value.minimum_frame_interval,
+            captures_audio: value.captures_audio as i8,
+            sample_rate: value.sample_rate,
+            channel_count: value.channel_count,
+            excludes_current_process_audio: value.excludes_current_process_audio as i8,
         }
+    }
+}
+
+impl From<SCStreamConfiguration> for Id<UnsafeStreamConfigurationRef> {
+    fn from(value: SCStreamConfiguration) -> Self {
+        let unsafe_config: UnsafeStreamConfiguration = value.into();
+        unsafe_config.into()
     }
 }
 
@@ -133,10 +129,6 @@ mod get_configuration {
     use super::*;
     #[test]
     fn test_configuration() {
-        SCStreamConfiguration::new(ConfigParams::Size(SizeConfig {
-            width: 100,
-            height: 100,
-            scales_to_fit: false,
-        }));
+        SCStreamConfiguration::from_size(100, 100, false);
     }
 }

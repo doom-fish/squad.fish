@@ -29,6 +29,7 @@ pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
 }
 #[derive(Debug)]
 pub struct CMSampleBuffer {
+    pub reference: Id<Object>,
     pub duration: CMTime,
     pub presentation_timestamp: CMTime,
     pub is_valid: bool,
@@ -74,6 +75,7 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                     let h = OUTPUTS.read().unwrap();
                     let fd = CMSampleBufferGetFormatDescription(sample);
                     h.get(ptr).unwrap().got_sample(CMSampleBuffer {
+                        reference: Id::from_ptr(sample),
                         duration: CMSampleBufferGetOutputDuration(sample),
                         presentation_timestamp: CMSampleBufferGetPresentationTimeStamp(sample),
                         is_valid: CMSampleBufferDataIsReady(sample),

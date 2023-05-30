@@ -132,5 +132,6 @@ mod stream_test {
         println!("start capture");
         stream.start_capture();
         println!("{:?}", rx.recv().unwrap());
+        stream.stop_capture();
     }
 }

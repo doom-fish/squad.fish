@@ -13,8 +13,9 @@ gst = { package = "gstreamer", version = "0.20" }
 gst-base = { package = "gstreamer-base", version = "0.20" }
 gst-video = { package = "gstreamer-video", version = "0.20" }
 gst-gl = { package = "gstreamer-gl", version = "0.20" }
-once_cell = "1.17.0"
+once_cell = "1"
 screencapturekit = { path = "../screencapturekit" }
+objc = "0.2"
 
 [features]
 static = []
@@ -23,7 +24,7 @@ capi = []
 
 [lib]
 name = "gstscreencapturekit"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [build-dependencies]
 gst-plugin-version-helper = "0.7.5"

@@ -13,16 +13,13 @@ use objc_foundation::INSObject;
 use objc_id::Id;
 use once_cell::sync::Lazy;
 
-use crate::os_types::{
-    base::{CMTime, CMTimeValue},
-    four_char_code::FourCharCode,
-};
+use crate::os_types::{base::CMTime, four_char_code::FourCharCode};
 
 static OUTPUTS: Lazy<RwLock<HashMap<usize, Box<dyn UnsafeSCStreamOutput + Send + Sync>>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 
 #[repr(C)]
-pub(crate) struct UnsafeSCStreamOutputHandler {}
+pub(crate) struct UnsafeSCStreamOutputHandler;
 
 pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
     fn got_sample(&self, cm: CMSampleBuffer);
@@ -34,6 +31,7 @@ pub struct CMSampleBuffer {
     pub presentation_timestamp: CMTime,
     pub is_valid: bool,
     pub num_samples: u32,
+    pub image_buffer: Id<Object>,
     pub format_description: CMFormatDescription,
 }
 
@@ -50,6 +48,8 @@ extern "C" {
     pub fn CMSampleBufferGetDuration(sample: *mut Object) -> CMTime;
     pub fn CMSampleBufferGetOutputDuration(sample: *mut Object) -> CMTime;
     pub fn CMSampleBufferGetNumSamples(sample: *mut Object) -> u32;
+    pub fn CMSampleBufferGetDataBuffer(sample: *mut Object) -> *mut Object;
+    pub fn CMSampleBufferGetImageBuffer(sample: *mut Object) -> *mut Object;
     pub fn CMSampleBufferGetFormatDescription(sample: *mut Object) -> *mut Object;
     pub fn CMSampleBufferGetPresentationTimeStamp(sample: *mut Object) -> CMTime;
     pub fn CMFormatDescriptionGetMediaType(fd: *mut Object) -> u32;
@@ -71,11 +71,15 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                 _of_type: u8,
             ) {
                 unsafe {
+                    if sample.is_null() {
+                        return;
+                    }
                     let ptr = this.get_ivar::<usize>("_trait");
                     let h = OUTPUTS.read().unwrap();
                     let fd = CMSampleBufferGetFormatDescription(sample);
                     h.get(ptr).unwrap().got_sample(CMSampleBuffer {
                         reference: Id::from_ptr(sample),
+                        image_buffer: Id::from_ptr(CMSampleBufferGetImageBuffer(sample)),
                         duration: CMSampleBufferGetOutputDuration(sample),
                         presentation_timestamp: CMSampleBufferGetPresentationTimeStamp(sample),
                         is_valid: CMSampleBufferDataIsReady(sample),

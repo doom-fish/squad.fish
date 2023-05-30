@@ -1,28 +1,17 @@
-// Copyright (C) 2018 Sebastian Dröge <sebastian@centricular.com>
-//
-// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
-// option. This file may not be copied, modified, or distributed
-// except according to those terms.
-//
-// SPDX-License-Identifier: MIT OR Apache-2.0
-
-use std::sync::atomic::AtomicBool;
+#![allow(dead_code)]
 use std::sync::Mutex;
 
-use gst::ffi::{GstClockTime, GST_CLOCK_TIME_NONE};
-use gst::glib::error;
 use gst::subclass::prelude::*;
-use gst::{error_msg, glib, loggable_error, Caps, ClockTime, Context};
+use gst::{error_msg, glib, loggable_error, Buffer, Caps, ClockTime, Context};
 use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
 
 use gst_gl::*;
-use gst_video::{VideoFormat, VideoInfo, VideoInfoBuilder};
+use gst_video::{VideoFormat, VideoInfo};
+use objc::runtime::Object;
 use once_cell::sync::Lazy;
 use screencapturekit::sc_stream::SCStream;
-use screencapturekit::sc_stream_configuration::{PixelFormat, PixelFormats};
+use screencapturekit::sc_stream_configuration::{PixelFormat, PIXEL_FORMATS};
 
 static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
     gst::DebugCategory::new(
@@ -42,10 +31,9 @@ impl Default for ScreenCaptureSrc {
         }
     }
 }
-static GL_MEMORY_FEATURE: &str = "memory:GLMemory";
-pub struct State {\
-    latency: ClockTime,
-    last_sampling: ClockTime,
+pub struct State {
+    latency: Option<ClockTime>,
+    last_sampling: Option<ClockTime>,
     count: u32,
     stage: Stage,
     stream: Option<SCStream>,
@@ -54,8 +42,8 @@ pub struct State {\
 impl Default for State {
     fn default() -> Self {
         Self {
-            latency: ClockTime::NONE.unwrap(),
-            last_sampling: ClockTime::NONE.unwrap(),
+            latency: ClockTime::NONE,
+            last_sampling: ClockTime::NONE,
             count: Default::default(),
             stage: Default::default(),
             stream: Default::default(),
@@ -174,9 +162,8 @@ impl ScreenCaptureSrc {
     }
 }
 
-extern "C" {
-    fn gst_core_media_buffer_new();
-}
+type CMSampleBufferRef = *const Object;
+type TextureCache = *const Object;
 
 fn into_video_format(pixel_format: PixelFormat) -> VideoFormat {
     match pixel_format {
@@ -263,7 +250,11 @@ impl BaseSrcImpl for ScreenCaptureSrc {
     fn query(&self, query: &mut gst::QueryRef) -> bool {
         return if let gst::QueryViewMut::Latency(ref mut q) = query.view_mut() {
             let state = self.state.lock().expect("Should be able to aquire lock");
-            q.set(true, state.latency, Some(state.latency));
+            q.set(
+                true,
+                state.latency.unwrap_or(ClockTime::ZERO),
+                state.latency,
+            );
             true
         } else {
             false
@@ -273,7 +264,7 @@ impl BaseSrcImpl for ScreenCaptureSrc {
     fn caps(&self, _filter: Option<&gst::Caps>) -> Option<gst::Caps> {
         let mut result = Caps::new_empty();
 
-        for format in PixelFormats {
+        for format in PIXEL_FORMATS {
             let cap = Caps::builder("video/x-raw")
                 .field("format", into_video_format(format).to_str())
                 .field("width", 1000)
@@ -285,11 +276,10 @@ impl BaseSrcImpl for ScreenCaptureSrc {
     }
 
     fn set_caps(&self, caps: &gst::Caps) -> Result<(), gst::LoggableError> {
-        let info = VideoInfo::from_caps(caps);
-        let mut state = self.state.lock().map_err(|e| {
+        let _info = VideoInfo::from_caps(caps);
+        let mut _state = self.state.lock().map_err(|e| {
             loggable_error!(gst::CAT_CAPS, format!("Could not aquire state lock: {}", e))
         })?;
-        state.width = info.width;
         //   height = info.height;
         //   format = info.finfo->format;
         //   latency = gst_util_uint64_scale (GST_SECOND, info.fps_d, info.fps_n);
@@ -387,7 +377,10 @@ impl BaseSrcImpl for ScreenCaptureSrc {
 }
 
 impl PushSrcImpl for ScreenCaptureSrc {
-    fn create(&self, buffer: Option<&mut gst::BufferRef>) -> Result<CreateSuccess, gst::FlowError> {
+    fn create(
+        &self,
+        _buffer: Option<&mut gst::BufferRef>,
+    ) -> Result<CreateSuccess, gst::FlowError> {
         // CMSampleBufferRef sbuf;
         //  CVImageBufferRef image_buf;
         //  CVPixelBufferRef pixel_buf;
@@ -448,8 +441,6 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //  return GST_FLOW_OK;
         //
         //
-
-        let buffer = gst::Buffer::from_slice(&[0, 0, 0]);
-        Ok(CreateSuccess::NewBuffer(buffer))
+        Ok(CreateSuccess::NewBuffer(Buffer::new()))
     }
 }

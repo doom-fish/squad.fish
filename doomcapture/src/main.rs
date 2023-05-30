@@ -1,8 +1,7 @@
+#![allow(dead_code)]
 use std::{
     process,
     sync::mpsc::{sync_channel, Receiver, SyncSender},
-    thread,
-    time::Duration,
 };
 
 use gst::traits::{ElementExt, GstObjectExt};
@@ -12,17 +11,17 @@ use screencapturekit::{
     sc_error_handler::StreamErrorHandler,
     sc_output_handler::StreamOutput,
     sc_shareable_content::SCShareableContent,
-    sc_stream::SCStream,
-    sc_stream_configuration::{ConfigParams, SCStreamConfiguration},
+    sc_stream::{CMSampleBuffer, SCStream},
+    sc_stream_configuration::SCStreamConfiguration,
 };
 
 struct DoomCaptureOutput {
-    tx: SyncSender<()>,
+    tx: SyncSender<CMSampleBuffer>,
 }
 struct DoomCaptureError;
 impl StreamOutput for DoomCaptureOutput {
-    fn stream_output(&self) {
-        self.tx.send(()).expect("Should be able to send!");
+    fn stream_output(&self, sample: CMSampleBuffer) {
+        self.tx.send(sample).expect("Should be able to send!");
     }
 }
 
@@ -34,7 +33,7 @@ impl StreamErrorHandler for DoomCaptureError {
 
 struct DoomCapture {
     stream: SCStream,
-    pub rx: Receiver<()>,
+    pub rx: Receiver<CMSampleBuffer>,
 }
 
 impl DoomCapture {
@@ -49,10 +48,7 @@ impl DoomCapture {
         println!("Display height: {:?}", display.height);
         let filter = SCContentFilter::new(Display(display.clone()));
 
-        let config = SCStreamConfiguration::new(ConfigParams::Size {
-            width: display.width,
-            height: display.height,
-        });
+        let config = SCStreamConfiguration::from_size(display.width, display.height, false);
 
         let (tx, rx) = sync_channel(1);
         let mut stream = SCStream::new(filter, config, DoomCaptureError {});

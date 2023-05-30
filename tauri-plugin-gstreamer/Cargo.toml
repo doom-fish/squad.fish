@@ -8,7 +8,7 @@ rust-version = "1.66"
 
 
 [dependencies]
-tauri = { version = "1.2.3" }
+tauri = { version = "1" }
 gst = { package = "gstreamer", version = "0.20" }
 gst-base = { package = "gstreamer-base", version = "0.20" }
 gst-video = { package = "gstreamer-video", version = "0.20" }

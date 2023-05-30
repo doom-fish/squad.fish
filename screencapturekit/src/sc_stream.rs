@@ -1,11 +1,11 @@
-use screencapturekit_sys::{os_types::rc::Id, stream::UnsafeSCStream};
-
 use crate::{
     sc_content_filter::SCContentFilter,
     sc_error_handler::{StreamErrorHandler, StreamErrorHandlerWrapper},
     sc_output_handler::{StreamOutput, StreamOutputWrapper},
     sc_stream_configuration::SCStreamConfiguration,
 };
+pub use screencapturekit_sys::stream_output_handler::CMSampleBuffer;
+use screencapturekit_sys::{os_types::rc::Id, stream::UnsafeSCStream};
 
 pub struct SCStream {
     pub(crate) _unsafe_ref: Id<UnsafeSCStream>,
@@ -42,6 +42,8 @@ mod tests {
 
     use std::sync::mpsc::{sync_channel, SyncSender};
 
+    use screencapturekit_sys::stream_output_handler::CMSampleBuffer;
+
     use crate::{
         sc_content_filter::InitParams::Display, sc_content_filter::SCContentFilter,
         sc_error_handler::StreamErrorHandler, sc_output_handler::StreamOutput,
@@ -50,14 +52,12 @@ mod tests {
 
     use super::SCStream;
     struct SomeErrorHandler {}
-    #[repr(C)]
     struct SomeOutputWrapper {
-        pub tx: SyncSender<()>,
+        pub tx: SyncSender<CMSampleBuffer>,
     }
     impl StreamOutput for SomeOutputWrapper {
-        fn stream_output(&self) {
-            println!("GOT SAMPLE !!!, {:p}", &self.tx);
-            self.tx.send(()).unwrap();
+        fn stream_output(&self, sample: CMSampleBuffer) {
+            self.tx.send(sample).unwrap();
         }
     }
     impl StreamErrorHandler for SomeErrorHandler {

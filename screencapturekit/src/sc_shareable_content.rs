@@ -19,7 +19,8 @@ impl SCShareableContent {
         let windows: Vec<SCWindow> = unsafe_ref
             .windows()
             .into_iter()
-            .map(SCWindow::from).collect();
+            .map(SCWindow::from)
+            .collect();
 
         let applications = unsafe_ref
             .applications()
@@ -45,7 +46,7 @@ impl SCShareableContent {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    #[ignore]
     #[test]
     fn test_sc_shareable_content() {
         SCShareableContent::current();

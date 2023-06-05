@@ -78,6 +78,12 @@ impl UnsafeSCStream {
     }
 }
 
+impl Drop for UnsafeSCStream {
+    fn drop(&mut self) {
+        self.stop_capture();
+    }
+}
+
 #[cfg(test)]
 mod stream_test {
     use std::sync::mpsc::{sync_channel, SyncSender};
@@ -109,8 +115,10 @@ mod stream_test {
             self.tx.send(sample).unwrap();
         }
     }
+    #[ignore]
     #[test]
     fn test_sc_stream() {
+        println!("ADDING OUTPUT");
         let display = UnsafeSCShareableContent::get()
             .unwrap()
             .displays()

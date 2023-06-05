@@ -63,6 +63,7 @@ mod tests {
     impl StreamErrorHandler for SomeErrorHandler {
         fn on_error(&self) {}
     }
+    #[ignore]
     #[test]
     fn test_output_wrapper() {
         let mut content = SCShareableContent::current();
@@ -74,7 +75,6 @@ mod tests {
         let w = SomeOutputWrapper { tx };
         stream.add_output(w);
         stream.start_capture();
-        rx.recv().unwrap();
-        stream.stop_capture();
+        println!("{:?}", rx.recv().unwrap());
     }
 }

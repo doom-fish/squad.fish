@@ -24,9 +24,11 @@ pub(crate) struct UnsafeSCStreamOutputHandler;
 pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
     fn got_sample(&self, cm: CMSampleBuffer);
 }
+
+pub type CMSampleBufferRef = Id<Object>;
 #[derive(Debug)]
 pub struct CMSampleBuffer {
-    pub reference: Id<Object>,
+    pub reference: CMSampleBufferRef,
     pub duration: CMTime,
     pub presentation_timestamp: CMTime,
     pub is_valid: bool,

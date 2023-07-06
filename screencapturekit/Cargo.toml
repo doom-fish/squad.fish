@@ -7,4 +7,4 @@ name = "screencapturekit"
 path = "./src/lib.rs"
 
 [dependencies]
-screencasys = { path = "../screencapturekit-sys" }
+screencapturekit-sys = { path = "../screencapturekit-sys" }

@@ -2,6 +2,7 @@ use gst::glib;
 use gst::prelude::*;
 
 mod core_video_buffer;
+mod core_video_memory;
 mod core_video_meta;
 mod imp;
 mod types;

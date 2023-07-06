@@ -116,7 +116,7 @@ unsafe extern "C" fn gst_apple_core_video_mem_share (gmem: *mut GstMemory, offse
     *size = *gmem.size - *offset;
   }
   /* the shared memory is always readonly */
-  
+  let sub =i
       GST_MEMORY_CAST (gst_apple_core_video_memory_new (GST_MINI_OBJECT_FLAGS
           (parent) | GST_MINI_OBJECT_FLAG_LOCK_READONLY, parent, mem->gpixbuf,
           mem->plane, gmem->maxsize, gmem->align, gmem->offset + offset, size));
@@ -131,7 +131,7 @@ unsafe extern "C" fn gst_apple_core_video_mem_is_span(mem1: *mut GstMemory, mem2
 
 unsafe extern "C" fn gst_apple_core_video_allocator_init (allocator: *mut GstAppleCoreVideoAllocator)
 {
-  let mut alloc: GstAllocator = ptr::read(allocator as *const _);
+  let alloc: GstAllocator = ptr::read(allocator as *const _);
 
   alloc.mem_type = GST_APPLE_CORE_VIDEO_ALLOCATOR_NAME;
   alloc.mem_map = gst_apple_core_video_mem_map;

@@ -1,12 +1,17 @@
 #![allow(dead_code)]
+use std::ptr;
 use std::sync::Mutex;
 
+use gst::ffi::GstBuffer;
+use gst::glib::ffi::gboolean;
+use gst::glib::translate::IntoGlib;
 use gst::subclass::prelude::*;
 use gst::{error_msg, glib, loggable_error, Buffer, Caps, ClockTime, Context};
 use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
 
 use gst_gl::*;
+use gst_video::ffi::GstVideoInfo;
 use gst_video::{VideoFormat, VideoInfo};
 use objc::runtime::Object;
 use once_cell::sync::Lazy;
@@ -162,8 +167,8 @@ impl ScreenCaptureSrc {
     }
 }
 
-type CMSampleBufferRef = *const Object;
-type TextureCache = *const Object;
+type CMSampleBufferRef = *mut Object;
+type TextureCache = *mut Object;
 
 fn into_video_format(pixel_format: PixelFormat) -> VideoFormat {
     match pixel_format {
@@ -441,6 +446,22 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //  return GST_FLOW_OK;
         //
         //
+        unsafe {
+            gst_core_media_buffer_new(ptr::null_mut(), false.into_glib(), ptr::null_mut());
+        }
         Ok(CreateSuccess::NewBuffer(Buffer::new()))
     }
+}
+
+#[repr(C)]
+struct GstVideoTextureCache {
+    _private: [usize; 4],
+}
+
+extern "C" {
+    fn gst_core_media_buffer_new(
+        sample_buf: CMSampleBufferRef,
+        use_video_meta: gboolean,
+        cache: *mut GstVideoTextureCache,
+    ) -> *mut GstBuffer;
 }

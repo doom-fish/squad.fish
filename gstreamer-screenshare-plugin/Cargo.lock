@@ -456,6 +456,7 @@ dependencies = [
 name = "gstreamer-screenshare-plugin"
 version = "0.0.1"
 dependencies = [
+ "cc",
  "glib 0.18.0",
  "gst-plugin-version-helper",
  "gstreamer 0.20.7",

@@ -11,7 +11,7 @@ use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
 
 use gst_gl::*;
-use gst_video::ffi::GstVideoInfo;
+
 use gst_video::{VideoFormat, VideoInfo};
 use objc::runtime::Object;
 use once_cell::sync::Lazy;

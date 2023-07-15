@@ -30,6 +30,7 @@ crate-type = ["cdylib"]
 [build-dependencies]
 gst-plugin-version-helper = "0.7.5"
 cc = "1"
+pkg-config = "0.3"
 
 [dev-dependencies.gst-check]
 git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs"

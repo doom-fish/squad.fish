@@ -42,14 +42,12 @@ typedef struct _GstCoreVideoMeta
 } GstCoreVideoMeta;
 
 GstBuffer * gst_core_video_buffer_new      (CVBufferRef cvbuf,
-                                            GstVideoInfo *info,
-                                            GstVideoTextureCache *cache);
+                                            GstVideoInfo *info);
 gboolean gst_core_video_info_init_from_pixel_buffer (GstVideoInfo * info,
                                                      CVPixelBufferRef pixel_buf);
 void gst_core_video_wrap_pixel_buffer      (GstBuffer * buf,
                                             GstVideoInfo * info,
                                             CVPixelBufferRef pixel_buf,
-                                            GstVideoTextureCache *cache,
                                             gboolean * has_padding);
 GType gst_core_video_meta_api_get_type (void);
 

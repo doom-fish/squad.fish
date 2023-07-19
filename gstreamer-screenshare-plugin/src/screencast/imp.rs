@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use std::ptr;
+use std::sync::mpsc::SyncSender;
 use std::sync::Mutex;
 
 use gst::ffi::GstBuffer;
@@ -15,8 +16,14 @@ use gst_gl::*;
 use gst_video::{VideoFormat, VideoInfo};
 use objc::runtime::Object;
 use once_cell::sync::Lazy;
-use screencapturekit::sc_stream::SCStream;
-use screencapturekit::sc_stream_configuration::{PixelFormat, PIXEL_FORMATS};
+use screencapturekit::sc_content_filter::SCContentFilter;
+use screencapturekit::sc_error_handler::StreamErrorHandler;
+use screencapturekit::sc_output_handler::StreamOutput;
+use screencapturekit::sc_shareable_content::SCShareableContent;
+use screencapturekit::sc_stream::{CMSampleBuffer, SCStream};
+use screencapturekit::sc_stream_configuration::{
+    PixelFormat, SCStreamConfiguration, PIXEL_FORMATS,
+};
 
 static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
     gst::DebugCategory::new(
@@ -29,18 +36,12 @@ static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
 pub struct ScreenCaptureSrc {
     state: Mutex<State>,
 }
-impl Default for ScreenCaptureSrc {
-    fn default() -> Self {
-        Self {
-            state: Mutex::new(State::default()),
-        }
-    }
-}
 pub struct State {
     latency: Option<ClockTime>,
     last_sampling: Option<ClockTime>,
     count: u32,
     stage: Stage,
+    receiver: Option<std::sync::mpsc::Receiver<CMSampleBuffer>>,
     stream: Option<SCStream>,
 }
 
@@ -51,6 +52,7 @@ impl Default for State {
             last_sampling: ClockTime::NONE,
             count: Default::default(),
             stage: Default::default(),
+            receiver: Default::default(),
             stream: Default::default(),
         }
     }
@@ -64,11 +66,48 @@ pub enum Stage {
     Stopped,
 }
 
+struct StreamProducer {
+    sender: SyncSender<CMSampleBuffer>,
+}
+
 #[glib::object_subclass]
 impl ObjectSubclass for ScreenCaptureSrc {
     const NAME: &'static str = "GstScreenCaptureKitSrc";
     type Type = super::ScreenCaptureSrc;
     type ParentType = gst_base::PushSrc;
+    fn with_class(_klass: &Self::Class) -> Self {
+        let mut content = SCShareableContent::current();
+        let display = content.displays.pop().unwrap();
+        let config = SCStreamConfiguration::from_size(100, 100, false);
+        let filter = SCContentFilter::new(
+            screencapturekit::sc_content_filter::InitParams::Display(display),
+        );
+        let (sender, receiver) = std::sync::mpsc::sync_channel(2);
+        let sp = StreamProducer { sender };
+        let mut stream = SCStream::new(filter, config, StreamErr {});
+        stream.add_output(sp);
+        let state = State {
+            stream: Some(stream),
+            receiver: Some(receiver),
+            ..Default::default()
+        };
+        Self {
+            state: Mutex::new(state),
+        }
+    }
+}
+impl StreamOutput for StreamProducer {
+    fn stream_output(&self, sample: screencapturekit::sc_stream::CMSampleBuffer) {
+        self.sender
+            .send(sample)
+            .map_err(|e| error_msg!(gst::StreamError::NotImplemented, ["ERR!"]));
+    }
+}
+struct StreamErr;
+impl StreamErrorHandler for StreamErr {
+    fn on_error(&self) {
+        todo!()
+    }
 }
 
 impl GstObjectImpl for ScreenCaptureSrc {}
@@ -386,6 +425,11 @@ impl PushSrcImpl for ScreenCaptureSrc {
         &self,
         _buffer: Option<&mut gst::BufferRef>,
     ) -> Result<CreateSuccess, gst::FlowError> {
+        let state = self.state.lock().unwrap();
+
+        let sample = state.receiver.as_ref().unwrap().recv().unwrap();
+        gst::debug!(CAT, imp: self, "GOT SAMPLE {}", &sample.is_valid);
+
         // CMSampleBufferRef sbuf;
         //  CVImageBufferRef image_buf;
         //  CVPixelBufferRef pixel_buf;
@@ -435,9 +479,10 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //  }
         //  CFRelease (sbuf);
         //
-        //  GST_BUFFER_OFFSET (*buf) = offset++;
+
+        //  GST_BUFFER_OFFSET (*buf) = offset++; OFFSET
         //  GST_BUFFER_OFFSET_END (*buf) = GST_BUFFER_OFFSET (*buf) + 1;
-        //  GST_BUFFER_TIMESTAMP (*buf) = timestamp;
+        //  GST_BUFFER_TIMESTAMP (*buf) = timestamp. SET_PTS
         //  GST_BUFFER_DURATION (*buf) = duration;
         //
         //  if (doStats)
@@ -447,8 +492,9 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //
         //
         unsafe {
-            gst_core_media_buffer_new(ptr::null_mut(), false.into_glib(), ptr::null_mut());
+            gst_core_media_buffer_new(&sample.reference, false.into_glib());
         }
+        //let mut b = Buffer::new();
         Ok(CreateSuccess::NewBuffer(Buffer::new()))
     }
 }
@@ -460,8 +506,7 @@ struct GstVideoTextureCache {
 
 extern "C" {
     fn gst_core_media_buffer_new(
-        sample_buf: CMSampleBufferRef,
-        use_video_meta: gboolean,
-        cache: *mut GstVideoTextureCache,
+        sample_buf: &CMSampleBufferRef,
+        use_video_meta: gboolean
     ) -> *mut GstBuffer;
 }

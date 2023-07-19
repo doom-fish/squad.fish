@@ -25,7 +25,9 @@ pub trait UnsafeSCStreamOutput: Send + Sync + 'static {
     fn got_sample(&self, cm: CMSampleBuffer);
 }
 
-pub type CMSampleBufferRef = Id<Object>;
+
+
+pub type CMSampleBufferRef = *mut Object;
 #[derive(Debug)]
 pub struct CMSampleBuffer {
     pub reference: CMSampleBufferRef,
@@ -33,10 +35,9 @@ pub struct CMSampleBuffer {
     pub presentation_timestamp: CMTime,
     pub is_valid: bool,
     pub num_samples: u32,
-    pub image_buffer: Id<Object>,
     pub format_description: CMFormatDescription,
 }
-
+unsafe impl Send for CMSampleBuffer {}
 #[derive(Debug)]
 pub struct CMFormatDescription {
     pub media_type: FourCharCode,
@@ -80,8 +81,7 @@ impl INSObject for UnsafeSCStreamOutputHandler {
                     let h = OUTPUTS.read().unwrap();
                     let fd = CMSampleBufferGetFormatDescription(sample);
                     h.get(ptr).unwrap().got_sample(CMSampleBuffer {
-                        reference: Id::from_ptr(sample),
-                        image_buffer: Id::from_ptr(CMSampleBufferGetImageBuffer(sample)),
+                        reference: sample,
                         duration: CMSampleBufferGetOutputDuration(sample),
                         presentation_timestamp: CMSampleBufferGetPresentationTimeStamp(sample),
                         is_valid: CMSampleBufferDataIsReady(sample),

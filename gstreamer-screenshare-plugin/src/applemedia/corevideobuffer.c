@@ -101,7 +101,7 @@ void
 gst_core_video_wrap_pixel_buffer (GstBuffer * buf,
     GstVideoInfo * info,
     CVPixelBufferRef pixel_buf,
-    GstVideoTextureCache * cache, gboolean * has_padding)
+    gboolean * has_padding)
 {
   guint n_planes;
   gsize offset[GST_VIDEO_MAX_PLANES] = { 0 };
@@ -204,8 +204,7 @@ gst_core_video_info_init_from_pixel_buffer (GstVideoInfo * info,
 
 
 GstBuffer *
-gst_core_video_buffer_new (CVBufferRef cvbuf, GstVideoInfo * vinfo,
-    GstVideoTextureCache * cache)
+gst_core_video_buffer_new (CVBufferRef cvbuf, GstVideoInfo * vinfo)
 {
   CVPixelBufferRef pixbuf = NULL;
   GstBuffer *buf;
@@ -225,7 +224,7 @@ gst_core_video_buffer_new (CVBufferRef cvbuf, GstVideoInfo * vinfo,
   meta->cvbuf = CVBufferRetain (cvbuf);
   meta->pixbuf = pixbuf;
 
-  gst_core_video_wrap_pixel_buffer (buf, vinfo, pixbuf, cache, NULL);
+  gst_core_video_wrap_pixel_buffer (buf, vinfo, pixbuf, NULL);
 
   return buf;
 }

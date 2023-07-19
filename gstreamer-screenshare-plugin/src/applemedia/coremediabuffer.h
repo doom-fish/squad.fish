@@ -44,8 +44,7 @@ typedef struct _GstCoreMediaMeta
 
 
 GstBuffer * gst_core_media_buffer_new      (CMSampleBufferRef sample_buf,
-                                            gboolean use_video_meta,
-                                            GstVideoTextureCache *cache);
+                                            gboolean use_video_meta);
 CVPixelBufferRef gst_core_media_buffer_get_pixel_buffer
                                            (GstBuffer * buf);
 GType gst_core_media_meta_api_get_type (void);

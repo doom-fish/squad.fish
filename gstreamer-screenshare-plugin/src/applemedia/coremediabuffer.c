@@ -247,6 +247,7 @@ GstBuffer *gst_core_media_buffer_new(CMSampleBufferRef sample_buf)
     if (!gst_video_info_init_from_pixel_buffer(&info, pixel_buf)) {
       goto error;
     }
+
     gst_core_video_wrap_pixel_buffer(buf, &info, pixel_buf, &has_padding);
 
   } else if (block_buf != NULL) {
@@ -256,7 +257,6 @@ GstBuffer *gst_core_media_buffer_new(CMSampleBufferRef sample_buf)
   } else {
     goto error;
   }
-  return 0;
   return buf;
 
 error:

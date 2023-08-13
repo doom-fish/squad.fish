@@ -22,18 +22,16 @@
 
 #include <gst/gst.h>
 #include <gst/video/gstvideometa.h>
-#include "videotexturecache.h"
 
 #include <CoreMedia/CoreMedia.h>
 
 G_BEGIN_DECLS
 
 #define GST_CORE_MEDIA_META_API_TYPE (gst_core_media_meta_api_get_type())
-#define gst_buffer_get_core_media_meta(b) \
-  ((GstCoreMediaMeta*)gst_buffer_get_meta((b),GST_CORE_MEDIA_META_API_TYPE))
+#define gst_buffer_get_core_media_meta(b)                                      \
+  ((GstCoreMediaMeta *)gst_buffer_get_meta((b), GST_CORE_MEDIA_META_API_TYPE))
 
-typedef struct _GstCoreMediaMeta
-{
+typedef struct _GstCoreMediaMeta {
   GstMeta meta;
 
   CMSampleBufferRef sample_buf;
@@ -42,12 +40,7 @@ typedef struct _GstCoreMediaMeta
   CMBlockBufferRef block_buf;
 } GstCoreMediaMeta;
 
-
-GstBuffer * gst_core_media_buffer_new      (CMSampleBufferRef sample_buf,
-                                            gboolean use_video_meta);
-CVPixelBufferRef gst_core_media_buffer_get_pixel_buffer
-                                           (GstBuffer * buf);
-GType gst_core_media_meta_api_get_type (void);
+GstBuffer *gst_core_media_buffer_new(CMSampleBufferRef sample_buf);
 
 G_END_DECLS
 

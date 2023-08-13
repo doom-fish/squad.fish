@@ -12,10 +12,6 @@ fn main() {
         .file("src/applemedia/corevideobuffer.c")
         .file("src/applemedia/corevideomemory.h")
         .file("src/applemedia/corevideomemory.c")
-        .file("src/applemedia/videotexturecache.h")
-        .file("src/applemedia/videotexturecache.m")
-        .file("src/applemedia/vtutil.h")
-        .file("src/applemedia/vtutil.c")
         .compile("applemedia");
 
     gst_plugin_version_helper::info()

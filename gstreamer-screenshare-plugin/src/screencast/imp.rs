@@ -1,17 +1,12 @@
 #![allow(dead_code)]
-use std::ptr;
 use std::sync::mpsc::SyncSender;
 use std::sync::Mutex;
 
 use gst::ffi::GstBuffer;
-use gst::glib::ffi::gboolean;
-use gst::glib::translate::IntoGlib;
 use gst::subclass::prelude::*;
 use gst::{error_msg, glib, loggable_error, Buffer, Caps, ClockTime, Context};
 use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
-
-use gst_gl::*;
 
 use gst_video::{VideoFormat, VideoInfo};
 use objc::runtime::Object;
@@ -79,6 +74,7 @@ impl ObjectSubclass for ScreenCaptureSrc {
         let mut content = SCShareableContent::current();
         let display = content.displays.pop().unwrap();
         let config = SCStreamConfiguration::from_size(100, 100, false);
+
         let filter = SCContentFilter::new(
             screencapturekit::sc_content_filter::InitParams::Display(display),
         );
@@ -426,7 +422,6 @@ impl PushSrcImpl for ScreenCaptureSrc {
         _buffer: Option<&mut gst::BufferRef>,
     ) -> Result<CreateSuccess, gst::FlowError> {
         let state = self.state.lock().unwrap();
-
         let sample = state.receiver.as_ref().unwrap().recv().unwrap();
         gst::debug!(CAT, imp: self, "GOT SAMPLE {}", &sample.is_valid);
 
@@ -491,8 +486,10 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //  return GST_FLOW_OK;
         //
         //
+        state.stream.as_ref().unwrap().stop_capture();
+
         unsafe {
-            gst_core_media_buffer_new(&sample.reference, false.into_glib());
+            gst_core_media_buffer_new(sample.reference);
         }
         //let mut b = Buffer::new();
         Ok(CreateSuccess::NewBuffer(Buffer::new()))
@@ -505,8 +502,5 @@ struct GstVideoTextureCache {
 }
 
 extern "C" {
-    fn gst_core_media_buffer_new(
-        sample_buf: &CMSampleBufferRef,
-        use_video_meta: gboolean
-    ) -> *mut GstBuffer;
+    fn gst_core_media_buffer_new(sample_buf: CMSampleBufferRef) -> gst::BufferRef;
 }

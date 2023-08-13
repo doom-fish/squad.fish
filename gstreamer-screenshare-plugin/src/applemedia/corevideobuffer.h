@@ -23,33 +23,15 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 #include <gst/video/gstvideometa.h>
-#include "videotexturecache.h"
 
 #include "CoreVideo/CoreVideo.h"
 
 G_BEGIN_DECLS
 
-#define GST_CORE_VIDEO_META_API_TYPE (gst_core_video_meta_api_get_type())
-#define gst_buffer_get_core_video_meta(b) \
-  ((GstCoreVideoMeta*)gst_buffer_get_meta((b),GST_CORE_VIDEO_META_API_TYPE))
-
-typedef struct _GstCoreVideoMeta
-{
-  GstMeta meta;
-
-  CVBufferRef cvbuf;
-  CVPixelBufferRef pixbuf;
-} GstCoreVideoMeta;
-
-GstBuffer * gst_core_video_buffer_new      (CVBufferRef cvbuf,
-                                            GstVideoInfo *info);
-gboolean gst_core_video_info_init_from_pixel_buffer (GstVideoInfo * info,
-                                                     CVPixelBufferRef pixel_buf);
 void gst_core_video_wrap_pixel_buffer      (GstBuffer * buf,
                                             GstVideoInfo * info,
                                             CVPixelBufferRef pixel_buf,
                                             gboolean * has_padding);
-GType gst_core_video_meta_api_get_type (void);
 
 G_END_DECLS
 

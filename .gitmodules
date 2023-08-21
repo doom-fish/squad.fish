@@ -1,0 +1,3 @@
+[submodule "screencapturekit-rs"]
+	path = screencapturekit-rs
+	url = https://github.com/svtlabs/screencapturekit-rs.git

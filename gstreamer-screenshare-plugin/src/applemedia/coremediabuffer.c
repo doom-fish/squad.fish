@@ -19,28 +19,22 @@
  * Boston, MA 02110-1301, USA.
  */
 
+#include <objc/runtime.h>
+#include <objc/message.h>
 #include "coremediabuffer.h"
 #include "corevideobuffer.h"
 #include "corevideomemory.h"
-
 static const GstMetaInfo *gst_core_media_meta_get_info(void);
 
 static void gst_core_media_meta_add(GstBuffer *buffer,
                                     CMSampleBufferRef sample_buf,
-                                    CVImageBufferRef image_buf,
-                                    CMBlockBufferRef block_buf) {
+                                    CVImageBufferRef image_buf) {
+  
   GstCoreMediaMeta *meta;
-
   meta = (GstCoreMediaMeta *)gst_buffer_add_meta(
       buffer, gst_core_media_meta_get_info(), NULL);
-  CFRetain(sample_buf);
-  if (image_buf)
-    CVBufferRetain(image_buf);
-  if (block_buf)
-    CFRetain(block_buf);
   meta->sample_buf = sample_buf;
   meta->image_buf = image_buf;
-  meta->block_buf = block_buf;
   if (image_buf != NULL && CFGetTypeID(image_buf) == CVPixelBufferGetTypeID())
     meta->pixel_buf = (CVPixelBufferRef)image_buf;
   else
@@ -61,12 +55,7 @@ static void gst_core_media_meta_free(GstCoreMediaMeta *meta, GstBuffer *buf) {
   if (meta->image_buf != NULL) {
     CVBufferRelease(meta->image_buf);
   }
-
-  if (meta->block_buf != NULL) {
-    CFRelease(meta->block_buf);
-  }
-
-  CFRelease(meta->sample_buf);
+  //CFRelease(meta->sample_buf);
 }
 
 static gboolean gst_core_media_meta_transform(GstBuffer *transbuf,
@@ -75,8 +64,7 @@ static gboolean gst_core_media_meta_transform(GstBuffer *transbuf,
                                               GstMetaTransformCopy *data) {
   if (!data->region) {
     /* only copy if the complete data is copied as well */
-    gst_core_media_meta_add(transbuf, meta->sample_buf, meta->image_buf,
-                            meta->block_buf);
+    gst_core_media_meta_add(transbuf, meta->sample_buf, meta->image_buf);
   } else {
     GST_WARNING_OBJECT(transbuf,
                        "dropping Core Media metadata due to partial buffer");
@@ -113,6 +101,7 @@ static const GstMetaInfo *gst_core_media_meta_get_info(void) {
 static GstVideoFormat gst_core_media_buffer_get_video_format(OSType format) {
   switch (format) {
   case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
+  case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
     return GST_VIDEO_FORMAT_NV12;
   case kCVPixelFormatType_422YpCbCr8_yuvs:
     return GST_VIDEO_FORMAT_YUY2;
@@ -129,81 +118,6 @@ static GstVideoFormat gst_core_media_buffer_get_video_format(OSType format) {
 }
 
 static gboolean
-gst_core_media_buffer_wrap_block_buffer(GstBuffer *buf,
-                                        CMBlockBufferRef block_buf) {
-  OSStatus status;
-  gchar *data = NULL;
-  size_t offset = 0, length_at_offset, total_length;
-
-  /* CMBlockBuffer can contain multiple non-continuous memory blocks */
-  do {
-    status = CMBlockBufferGetDataPointer(block_buf, offset, &length_at_offset,
-                                         &total_length, &data);
-    if (status != kCMBlockBufferNoErr) {
-      return FALSE;
-    }
-
-    /* retaining the CMBlockBuffer so it won't go away for the lifetime of the
-     * GstMemory */
-    gst_buffer_append_memory(
-        buf, gst_memory_new_wrapped(
-                 0, data, length_at_offset, 0, length_at_offset,
-                 (gpointer)CFRetain(block_buf), (GDestroyNotify)CFRelease));
-
-    offset += length_at_offset;
-  } while (offset < total_length);
-
-  return TRUE;
-}
-
-GstBuffer *gst_core_media_buffer_new_from_buffer(GstBuffer *buf,
-                                                 GstVideoInfo *info) {
-  gboolean ret;
-  GstBuffer *copy_buf;
-  GstVideoFrame dest, src;
-  GstAllocator *allocator;
-
-  allocator = gst_allocator_find(GST_ALLOCATOR_SYSMEM);
-  if (!allocator) {
-    GST_ERROR("Could not find SYSMEM allocator");
-    return NULL;
-  }
-
-  copy_buf = gst_buffer_new_allocate(allocator, info->size, NULL);
-
-  gst_object_unref(allocator);
-
-  if (!gst_video_frame_map(&dest, info, copy_buf, GST_MAP_WRITE)) {
-    GST_ERROR("Could not map destination frame");
-    goto error;
-  }
-
-  if (!gst_video_frame_map(&src, info, buf, GST_MAP_READ)) {
-    GST_ERROR("Could not map source frame");
-    gst_video_frame_unmap(&dest);
-    goto error;
-  }
-
-  ret = gst_video_frame_copy(&dest, &src);
-
-  gst_video_frame_unmap(&dest);
-  gst_video_frame_unmap(&src);
-
-  if (!ret) {
-    GST_ERROR("Could not copy frame");
-    goto error;
-  }
-
-  return copy_buf;
-
-error:
-  if (copy_buf) {
-    gst_buffer_unref(copy_buf);
-  }
-  return NULL;
-}
-
-static gboolean
 gst_video_info_init_from_pixel_buffer(GstVideoInfo *info,
                                       CVPixelBufferRef pixel_buf) {
   size_t width, height;
@@ -214,7 +128,6 @@ gst_video_info_init_from_pixel_buffer(GstVideoInfo *info,
   height = CVPixelBufferGetHeight(pixel_buf);
   format_type = CVPixelBufferGetPixelFormatType(pixel_buf);
   video_format = gst_core_media_buffer_get_video_format(format_type);
-
   if (video_format == GST_VIDEO_FORMAT_UNKNOWN) {
     return FALSE;
   }
@@ -229,39 +142,29 @@ GstBuffer *gst_core_media_buffer_new(CMSampleBufferRef sample_buf)
 
 {
   CVImageBufferRef image_buf;
-  CMBlockBufferRef block_buf;
   GstBuffer *buf;
-
   image_buf = CMSampleBufferGetImageBuffer(sample_buf);
-  block_buf = CMSampleBufferGetDataBuffer(sample_buf);
 
   buf = gst_buffer_new();
 
-  gst_core_media_meta_add(buf, sample_buf, image_buf, block_buf);
-
+  gst_core_media_meta_add(buf, sample_buf, image_buf);
   if (image_buf != NULL && CFGetTypeID(image_buf) == CVPixelBufferGetTypeID()) {
     GstVideoInfo info;
-    gboolean has_padding = FALSE;
     CVPixelBufferRef pixel_buf = (CVPixelBufferRef)image_buf;
-
     if (!gst_video_info_init_from_pixel_buffer(&info, pixel_buf)) {
       goto error;
     }
-
-    gst_core_video_wrap_pixel_buffer(buf, &info, pixel_buf, &has_padding);
-
-  } else if (block_buf != NULL) {
-    if (!gst_core_media_buffer_wrap_block_buffer(buf, block_buf)) {
-      goto error;
-    }
+    gst_core_video_wrap_pixel_buffer(buf, &info, pixel_buf);
   } else {
     goto error;
   }
+
   return buf;
 
 error:
   if (buf) {
     gst_buffer_unref(buf);
   }
+  
   return NULL;
 }

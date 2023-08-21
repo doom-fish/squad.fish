@@ -30,8 +30,8 @@ G_BEGIN_DECLS
 
 void gst_core_video_wrap_pixel_buffer      (GstBuffer * buf,
                                             GstVideoInfo * info,
-                                            CVPixelBufferRef pixel_buf,
-                                            gboolean * has_padding);
+                                            CVPixelBufferRef pixel_buf);
+                                            
 
 G_END_DECLS
 

@@ -27,8 +27,7 @@
 void
 gst_core_video_wrap_pixel_buffer (GstBuffer * buf,
     GstVideoInfo * info,
-    CVPixelBufferRef pixel_buf,
-    gboolean * has_padding)
+    CVPixelBufferRef pixel_buf)
 {
   guint n_planes;
   gsize offset[GST_VIDEO_MAX_PLANES] = { 0 };
@@ -40,8 +39,6 @@ gst_core_video_wrap_pixel_buffer (GstBuffer * buf,
 
   gpixbuf = gst_apple_core_video_pixel_buffer_new (pixel_buf);
 
-  if (has_padding)
-    *has_padding = FALSE;
 
   if (CVPixelBufferIsPlanar (pixel_buf)) {
     gint i, size = 0, plane_offset = 0;
@@ -50,8 +47,6 @@ gst_core_video_wrap_pixel_buffer (GstBuffer * buf,
     for (i = 0; i < n_planes; i++) {
       stride[i] = CVPixelBufferGetBytesPerRowOfPlane (pixel_buf, i);
 
-      if (stride[i] != GST_VIDEO_INFO_PLANE_STRIDE (info, i) && has_padding)
-        *has_padding = TRUE;
 
       size = stride[i] * CVPixelBufferGetHeightOfPlane (pixel_buf, i);
       offset[i] = plane_offset;

@@ -71,7 +71,7 @@ gst_apple_core_video_pixel_buffer_unref (GstAppleCoreVideoPixelBuffer * gpixbuf)
           ("%p: CVPixelBuffer memory still locked (lock_count = %d), likely forgot to unmap GstAppleCoreVideoMemory",
           gpixbuf, gpixbuf->lock_count);
     }
-    CVPixelBufferRelease (gpixbuf->buf);
+   // CVPixelBufferRelease (gpixbuf->buf);
     g_mutex_clear (&gpixbuf->mutex);
     g_slice_free (GstAppleCoreVideoPixelBuffer, gpixbuf);
   }

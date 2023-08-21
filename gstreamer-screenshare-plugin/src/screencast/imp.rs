@@ -2,20 +2,20 @@
 use std::sync::mpsc::SyncSender;
 use std::sync::Mutex;
 
-use gst::ffi::GstBuffer;
 use gst::subclass::prelude::*;
-use gst::{error_msg, glib, loggable_error, Buffer, Caps, ClockTime, Context};
+use gst::{error_msg, glib, loggable_error, Caps, ClockTime, Context};
 use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
 
+use gst_base::traits::BaseSrcExt;
 use gst_video::{VideoFormat, VideoInfo};
-use objc::runtime::Object;
 use once_cell::sync::Lazy;
 use screencapturekit::sc_content_filter::SCContentFilter;
+use screencapturekit::sc_display::SCDisplay;
 use screencapturekit::sc_error_handler::StreamErrorHandler;
 use screencapturekit::sc_output_handler::StreamOutput;
 use screencapturekit::sc_shareable_content::SCShareableContent;
-use screencapturekit::sc_stream::{CMSampleBuffer, SCStream};
+use screencapturekit::sc_stream::{CMSampleBuffer, CMSampleBufferRef, SCStream};
 use screencapturekit::sc_stream_configuration::{
     PixelFormat, SCStreamConfiguration, PIXEL_FORMATS,
 };
@@ -71,9 +71,10 @@ impl ObjectSubclass for ScreenCaptureSrc {
     type Type = super::ScreenCaptureSrc;
     type ParentType = gst_base::PushSrc;
     fn with_class(_klass: &Self::Class) -> Self {
+        unsafe { gst_apple_core_video_memory_init() };
         let mut content = SCShareableContent::current();
         let display = content.displays.pop().unwrap();
-        let config = SCStreamConfiguration::from_size(100, 100, false);
+        let config = SCStreamConfiguration::from_size(display.width, display.height, false);
 
         let filter = SCContentFilter::new(
             screencapturekit::sc_content_filter::InitParams::Display(display),
@@ -124,38 +125,17 @@ impl ElementImpl for ScreenCaptureSrc {
         Some(&*ELEMENT_METADATA)
     }
     fn set_context(&self, context: &Context) {
-        // GST_INFO_OBJECT (element, "setting context %s",
-        //          gst_context_get_context_type (context));
-        //  gst_gl_handle_set_context (element, context,
-        //          &ctxh->display, &ctxh->other_context);
-        //  GST_ELEMENT_CLASS (parent_class)->set_context (element, context);
         self.parent_set_context(context)
     }
 
     fn pad_templates() -> &'static [gst::PadTemplate] {
         static PAD_TEMPLATES: Lazy<Vec<gst::PadTemplate>> = Lazy::new(|| {
-            // let gl_caps = gst_video::VideoCapsBuilder::new()
-            //     .features([GL_MEMORY_FEATURE])
-            //     .format(VideoFormat::Uyvy)
-            //     .field("texture-target", "rectangle")
-            //     .build();
-
-            let raw1_caps = gst_video::video_make_raw_caps(&[
-                VideoFormat::Nv12,
-                VideoFormat::Uyvy,
-                VideoFormat::Yuy2,
-            ])
-            .build();
-            let raw2_caps = gst_video::video_make_raw_caps(&[VideoFormat::Bgra]).build();
-            let mut full_caps = gst::Caps::new_empty();
-            // full_caps.merge(gl_caps);
-            full_caps.merge(raw1_caps);
-            full_caps.merge(raw2_caps);
+            let caps = gst_video::video_make_raw_caps(&[VideoFormat::Nv12]).build();
             let src_pad_template = gst::PadTemplate::new(
                 "src",
                 gst::PadDirection::Src,
                 gst::PadPresence::Always,
-                &full_caps,
+                &caps,
             )
             .unwrap();
 
@@ -171,81 +151,21 @@ impl ElementImpl for ScreenCaptureSrc {
         self.parent_change_state(transition)
     }
 }
-impl ScreenCaptureSrc {
-    fn capture_output() {
-        // GstClockTime timestamp, duration;
-        //
-        //  [bufQueueLock lock];
-        //
-        //  if (stopRequest) {
-        //    [bufQueueLock unlock];
-        //    return;
-        //  }
-        //
-        //  [self getSampleBuffer:sampleBuffer timestamp:&timestamp duration:&duration];
-        //
-        //  if (timestamp == GST_CLOCK_TIME_NONE) {
-        //    [bufQueueLock unlockWithCondition:([bufQueue count] == 0) ? NO_BUFFERS : HAS_BUFFER_OR_STOP_REQUEST];
-        //    return;
-        //  }
-        //
-        //  if ([bufQueue count] == BUFFER_QUEUE_SIZE)
-        //    [bufQueue removeLastObject];
-        //
-        //  [bufQueue insertObject:@{@"sbuf": (__bridge id)sampleBuffer,
-        //                           @"timestamp": @(timestamp),
-        //                           @"duration": @(duration)}
-        //                 atIndex:0];
-        //
-        //  [bufQueueLock unlockWithCondition:HAS_BUFFER_OR_STOP_REQUEST];
-        //
-    }
-}
-
-type CMSampleBufferRef = *mut Object;
-type TextureCache = *mut Object;
 
 fn into_video_format(pixel_format: PixelFormat) -> VideoFormat {
     match pixel_format {
         PixelFormat::ARGB8888 => VideoFormat::Bgra,
         PixelFormat::ARGB2101010 => VideoFormat::Gbra10le,
-        PixelFormat::YCbCr420v => VideoFormat::I420,
-        PixelFormat::YCbCr420f => VideoFormat::I420,
+        PixelFormat::YCbCr420v => VideoFormat::Nv12,
+        PixelFormat::YCbCr420f => VideoFormat::Nv12,
     }
 }
-
 impl BaseSrcImpl for ScreenCaptureSrc {
     fn decide_allocation(
         &self,
         query: &mut gst::query::Allocation,
     ) -> Result<(), gst::LoggableError> {
-        //         if let Some(alloc_cap) = query.get().0 {
-        //             if let Some(feature) = alloc_cap.features(0) {
-        //                 if feature.contains(GL_MEMORY_FEATURE) {
-        // let cache_fl = Texture
-        //         }
-        //             }
-
-        //
-        // let features = alloc_caps.;
-        // if (gst_caps_features_contains (features, GST_CAPS_FEATURE_MEMORY_GL_MEMORY)) {
-        //   GstVideoTextureCacheGL *cache_gl;
-        //
-        //   cache_gl = textureCache ? GST_VIDEO_TEXTURE_CACHE_GL (textureCache) : NULL;
-        //
-        //   gst_gl_context_helper_ensure_context (ctxh);
-        //   GST_INFO_OBJECT (element, "pushing textures, context %p old context %p",
-        //     ctxh->context, cache_gl ? cache_gl->ctx : NULL);
-        //   if (cache_gl && cache_gl->ctx != ctxh->context) {
-        //     g_object_unref (textureCache);
-        //     textureCache = NULL;
-        //   }
-        //   if (!textureCache)
-        //     textureCache = gst_video_texture_cache_gl_new (ctxh->context);
-        //   gst_video_texture_cache_set_format (textureCache, format, alloc_caps);
-
-        //     Ok(())
-        // }
+        gst::error!(CAT, imp: self, "ALLOC {:?}", query);
         self.parent_decide_allocation(query)
     }
     fn start(&self) -> Result<(), gst::ErrorMessage> {
@@ -282,7 +202,6 @@ impl BaseSrcImpl for ScreenCaptureSrc {
         gst::info!(CAT, imp: self, "Stopped");
         Ok(())
     }
-
     fn is_seekable(&self) -> bool {
         false
     }
@@ -301,87 +220,21 @@ impl BaseSrcImpl for ScreenCaptureSrc {
         };
     }
 
-    fn caps(&self, _filter: Option<&gst::Caps>) -> Option<gst::Caps> {
-        let mut result = Caps::new_empty();
-
-        for format in PIXEL_FORMATS {
-            let cap = Caps::builder("video/x-raw")
-                .field("format", into_video_format(format).to_str())
-                .field("width", 1000)
-                .field("height", 1000)
-                .build();
-            result.get_mut().unwrap().append(cap);
-        }
+    fn caps(&self, filter: Option<&gst::Caps>) -> Option<gst::Caps> {
+        let result = Caps::new_empty();
+        gst::error!(CAT, imp: self, "CAPS");
         Some(result)
     }
 
     fn set_caps(&self, caps: &gst::Caps) -> Result<(), gst::LoggableError> {
-        let _info = VideoInfo::from_caps(caps);
-        let mut _state = self.state.lock().map_err(|e| {
-            loggable_error!(gst::CAT_CAPS, format!("Could not aquire state lock: {}", e))
-        })?;
-        //   height = info.height;
-        //   format = info.finfo->format;
-        //   latency = gst_util_uint64_scale (GST_SECOND, info.fps_d, info.fps_n);
-        //
-        //   dispatch_sync (mainQueue, ^{
-        //     GST_INFO_OBJECT (element,
-        //         "width: %d height: %d format: %s", width, height,
-        //         gst_video_format_to_string (format));
-        //     int video_format = gst_video_format_to_cvpixelformat (format);
-        //     output.videoSettings = [NSDictionary
-        //         dictionaryWithObject:[NSNumber numberWithInt:video_format]
-        //         forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
-        //
-        //       AVCaptureScreenInput *screenInput = (AVCaptureScreenInput *)input;
-        //       screenInput.minFrameDuration = CMTimeMake(info.fps_d, info.fps_n);
-        //     gst_caps_replace (&caps, new_caps);
-        //     GST_INFO_OBJECT (element, "configured caps %"GST_PTR_FORMAT, caps);
-        //
-        //     if (![session isRunning]) {
-        //       BOOL stopping = NO;
-        //
-        //       /* If permissions are still pending, wait for a response before
-        //        * starting the capture running, or else we'll get black frames */
-        //       [permissionCond lock];
-        //       if (permissionRequestPending && !permissionStopRequest) {
-        //         GST_DEBUG_OBJECT (element, "Waiting for pending device access permission.");
-        //         do {
-        //           [permissionCond wait];
-        //         } while (permissionRequestPending && !permissionStopRequest);
-        //       }
-        //       stopping = permissionStopRequest;
-        //       [permissionCond unlock];
-        //
-        //       if (!stopping)
-        //         [session startRunning];
-        //     }
-        //
-        //     /* Unlock device configuration only after session is started so the session
-        //      * won't reset the capture formats */
-        //     [device unlockForConfiguration];
-        //   });
-        //
-        //   return success;
-        //
+        let info = VideoInfo::from_caps(caps).unwrap();
 
-        gst::debug!(CAT, imp: self, "Configuring for caps {}", caps);
+        gst::error!(CAT, imp: self, "CONFIG for caps {}", caps);
         Ok(())
     }
 
     fn fixate(&self, caps: gst::Caps) -> gst::Caps {
-        //   GstStructure *structure;
-        //
-        // new_caps = gst_caps_make_writable (new_caps);
-        // new_caps = gst_caps_truncate (new_caps);
-        // structure = gst_caps_get_structure (new_caps, 0);
-        // /* crank up to 11. This is what the presets do, but we don't use the presets
-        //  * in ios >= 7.0 */
-        // gst_structure_fixate_field_nearest_int (structure, "height", G_MAXINT);
-        // gst_structure_fixate_field_nearest_fraction (structure, "framerate", 30, 1);
-        //
-        // return gst_caps_fixate (new_caps);
-        //
+        gst::error!(CAT, imp: self, "FIXATE for caps {}", caps);
         self.parent_fixate(caps)
     }
 
@@ -417,13 +270,11 @@ impl BaseSrcImpl for ScreenCaptureSrc {
 }
 
 impl PushSrcImpl for ScreenCaptureSrc {
-    fn create(
-        &self,
-        _buffer: Option<&mut gst::BufferRef>,
-    ) -> Result<CreateSuccess, gst::FlowError> {
-        let state = self.state.lock().unwrap();
+    fn create(&self, buffer: Option<&mut gst::BufferRef>) -> Result<CreateSuccess, gst::FlowError> {
+        gst::error!(CAT, imp: self, "CREATE CALLED");
+        let mut state = self.state.lock().unwrap();
         let sample = state.receiver.as_ref().unwrap().recv().unwrap();
-        gst::debug!(CAT, imp: self, "GOT SAMPLE {}", &sample.is_valid);
+        gst::error!(CAT, imp: self, "GOT SAMPLE {:?}", sample);
 
         // CMSampleBufferRef sbuf;
         //  CVImageBufferRef image_buf;
@@ -472,35 +323,40 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //    CFRelease (sbuf);
         //    return GST_FLOW_ERROR;
         //  }
-        //  CFRelease (sbuf);
         //
+        //  CFRelease (sbuf);
 
         //  GST_BUFFER_OFFSET (*buf) = offset++; OFFSET
         //  GST_BUFFER_OFFSET_END (*buf) = GST_BUFFER_OFFSET (*buf) + 1;
         //  GST_BUFFER_TIMESTAMP (*buf) = timestamp. SET_PTS
         //  GST_BUFFER_DURATION (*buf) = duration;
         //
-        //  if (doStats)
+        //  if (doStatsear
+        //
         //    [self updateStatistics];
         //
         //  return GST_FLOW_OK;
         //
         //
-        state.stream.as_ref().unwrap().stop_capture();
 
-        unsafe {
-            gst_core_media_buffer_new(sample.reference);
-        }
-        //let mut b = Buffer::new();
-        Ok(CreateSuccess::NewBuffer(Buffer::new()))
+        let mut buf = unsafe {
+            let b = gst_core_media_buffer_new(sample.reference);
+            gst::Buffer::from_glib_full(b)
+        };
+
+        {
+            let buf = buf.get_mut().unwrap();
+            buf.set_pts(ClockTime::from_nseconds(
+                sample.presentation_timestamp.value as u64,
+            ));
+        };
+
+        gst::error!(CAT, imp: self, "BUFFER {:?}", buf);
+        Ok(CreateSuccess::NewBuffer(buf))
     }
 }
 
-#[repr(C)]
-struct GstVideoTextureCache {
-    _private: [usize; 4],
-}
-
 extern "C" {
-    fn gst_core_media_buffer_new(sample_buf: CMSampleBufferRef) -> gst::BufferRef;
+    fn gst_core_media_buffer_new(sample_buf: *mut CMSampleBufferRef) -> *const gst::ffi::GstBuffer;
+    fn gst_apple_core_video_memory_init();
 }

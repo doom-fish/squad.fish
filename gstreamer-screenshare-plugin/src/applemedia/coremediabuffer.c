@@ -27,16 +27,16 @@
 static const GstMetaInfo *gst_core_media_meta_get_info(void);
 
 static void gst_core_media_meta_add(GstBuffer *buffer,
-                                    CMSampleBufferRef sample_buf,
                                     CVImageBufferRef image_buf) {
   
   GstCoreMediaMeta *meta;
   meta = (GstCoreMediaMeta *)gst_buffer_add_meta(
       buffer, gst_core_media_meta_get_info(), NULL);
-  meta->sample_buf = sample_buf;
   meta->image_buf = image_buf;
-  if (image_buf != NULL && CFGetTypeID(image_buf) == CVPixelBufferGetTypeID())
+  if (image_buf != NULL && CFGetTypeID(image_buf) == CVPixelBufferGetTypeID()) {
+
     meta->pixel_buf = (CVPixelBufferRef)image_buf;
+  }
   else
     meta->pixel_buf = NULL;
 }
@@ -55,7 +55,6 @@ static void gst_core_media_meta_free(GstCoreMediaMeta *meta, GstBuffer *buf) {
   if (meta->image_buf != NULL) {
     CVBufferRelease(meta->image_buf);
   }
-  //CFRelease(meta->sample_buf);
 }
 
 static gboolean gst_core_media_meta_transform(GstBuffer *transbuf,
@@ -64,7 +63,7 @@ static gboolean gst_core_media_meta_transform(GstBuffer *transbuf,
                                               GstMetaTransformCopy *data) {
   if (!data->region) {
     /* only copy if the complete data is copied as well */
-    gst_core_media_meta_add(transbuf, meta->sample_buf, meta->image_buf);
+    gst_core_media_meta_add(transbuf, meta->image_buf);
   } else {
     GST_WARNING_OBJECT(transbuf,
                        "dropping Core Media metadata due to partial buffer");
@@ -139,15 +138,15 @@ gst_video_info_init_from_pixel_buffer(GstVideoInfo *info,
 }
 
 GstBuffer *gst_core_media_buffer_new(CMSampleBufferRef sample_buf)
-
 {
-  CVImageBufferRef image_buf;
-  GstBuffer *buf;
-  image_buf = CMSampleBufferGetImageBuffer(sample_buf);
 
+
+  GstBuffer *buf;
+  CVImageBufferRef image_buf = CMSampleBufferGetImageBuffer(sample_buf);
+  
   buf = gst_buffer_new();
 
-  gst_core_media_meta_add(buf, sample_buf, image_buf);
+  gst_core_media_meta_add(buf, image_buf);
   if (image_buf != NULL && CFGetTypeID(image_buf) == CVPixelBufferGetTypeID()) {
     GstVideoInfo info;
     CVPixelBufferRef pixel_buf = (CVPixelBufferRef)image_buf;

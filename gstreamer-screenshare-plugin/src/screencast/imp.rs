@@ -3,23 +3,18 @@ use std::sync::mpsc::SyncSender;
 use std::sync::Mutex;
 
 use gst::subclass::prelude::*;
-use gst::{error_msg, glib, loggable_error, Caps, ClockTime, Context};
+use gst::{error_msg, glib, Caps, ClockTime};
 use gst_base::subclass::base_src::CreateSuccess;
 use gst_base::subclass::prelude::*;
 
-use gst_base::traits::BaseSrcExt;
-use gst_video::{VideoFormat, VideoInfo};
+use gst_video::VideoFormat;
 use once_cell::sync::Lazy;
 use screencapturekit::sc_content_filter::SCContentFilter;
-use screencapturekit::sc_display::SCDisplay;
 use screencapturekit::sc_error_handler::StreamErrorHandler;
-use screencapturekit::sc_output_handler::StreamOutput;
+use screencapturekit::sc_output_handler::{StreamOutput,  CMSampleBuffer, SCStreamOutputType};
 use screencapturekit::sc_shareable_content::SCShareableContent;
-use screencapturekit::sc_stream::{CMSampleBuffer, CMSampleBufferRef, SCStream};
-use screencapturekit::sc_stream_configuration::{
-    PixelFormat, SCStreamConfiguration, PIXEL_FORMATS,
-};
-
+use screencapturekit::sc_stream::SCStream;
+use screencapturekit::sc_stream_configuration::{SCStreamConfiguration, PixelFormat};
 static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
     gst::DebugCategory::new(
         "screencapture",
@@ -70,12 +65,11 @@ impl ObjectSubclass for ScreenCaptureSrc {
     const NAME: &'static str = "GstScreenCaptureKitSrc";
     type Type = super::ScreenCaptureSrc;
     type ParentType = gst_base::PushSrc;
-    fn with_class(_klass: &Self::Class) -> Self {
-        unsafe { gst_apple_core_video_memory_init() };
+
+    fn new() -> Self {
         let mut content = SCShareableContent::current();
         let display = content.displays.pop().unwrap();
         let config = SCStreamConfiguration::from_size(display.width, display.height, false);
-
         let filter = SCContentFilter::new(
             screencapturekit::sc_content_filter::InitParams::Display(display),
         );
@@ -88,16 +82,21 @@ impl ObjectSubclass for ScreenCaptureSrc {
             receiver: Some(receiver),
             ..Default::default()
         };
+
         Self {
             state: Mutex::new(state),
         }
     }
 }
+
 impl StreamOutput for StreamProducer {
-    fn stream_output(&self, sample: screencapturekit::sc_stream::CMSampleBuffer) {
-        self.sender
-            .send(sample)
-            .map_err(|e| error_msg!(gst::StreamError::NotImplemented, ["ERR!"]));
+    fn did_output_sample_buffer(&self, sample_buffer: CMSampleBuffer, _of_type: SCStreamOutputType) {
+        let _ = self.sender.send(sample_buffer).map_err(|_| {
+            error_msg!(
+                gst::ResourceError::Failed,
+                ("Failed to send Samplebuffer through sync channel")
+            )
+        });
     }
 }
 struct StreamErr;
@@ -123,9 +122,6 @@ impl ElementImpl for ScreenCaptureSrc {
         });
 
         Some(&*ELEMENT_METADATA)
-    }
-    fn set_context(&self, context: &Context) {
-        self.parent_set_context(context)
     }
 
     fn pad_templates() -> &'static [gst::PadTemplate] {
@@ -165,7 +161,7 @@ impl BaseSrcImpl for ScreenCaptureSrc {
         &self,
         query: &mut gst::query::Allocation,
     ) -> Result<(), gst::LoggableError> {
-        gst::error!(CAT, imp: self, "ALLOC {:?}", query);
+        gst::info!(CAT, imp: self, "ALLOC {:?}", query);
         self.parent_decide_allocation(query)
     }
     fn start(&self) -> Result<(), gst::ErrorMessage> {
@@ -220,21 +216,21 @@ impl BaseSrcImpl for ScreenCaptureSrc {
         };
     }
 
-    fn caps(&self, filter: Option<&gst::Caps>) -> Option<gst::Caps> {
+    fn caps(&self, _filter: Option<&gst::Caps>) -> Option<gst::Caps> {
         let result = Caps::new_empty();
-        gst::error!(CAT, imp: self, "CAPS");
+        gst::info!(CAT, imp: self, "CAPS");
         Some(result)
     }
 
     fn set_caps(&self, caps: &gst::Caps) -> Result<(), gst::LoggableError> {
-        let info = VideoInfo::from_caps(caps).unwrap();
+        // let info = VideoInfo::from_caps(caps).unwrap();
 
-        gst::error!(CAT, imp: self, "CONFIG for caps {}", caps);
+        gst::info!(CAT, imp: self, "CONFIG for caps {}", caps);
         Ok(())
     }
 
     fn fixate(&self, caps: gst::Caps) -> gst::Caps {
-        gst::error!(CAT, imp: self, "FIXATE for caps {}", caps);
+        gst::info!(CAT, imp: self, "FIXATE for caps {}", caps);
         self.parent_fixate(caps)
     }
 
@@ -270,11 +266,14 @@ impl BaseSrcImpl for ScreenCaptureSrc {
 }
 
 impl PushSrcImpl for ScreenCaptureSrc {
-    fn create(&self, buffer: Option<&mut gst::BufferRef>) -> Result<CreateSuccess, gst::FlowError> {
-        gst::error!(CAT, imp: self, "CREATE CALLED");
-        let mut state = self.state.lock().unwrap();
+    fn create(
+        &self,
+        _buffer: Option<&mut gst::BufferRef>,
+    ) -> Result<CreateSuccess, gst::FlowError> {
+        gst::info!(CAT, imp: self, "CREATE CALLED");
+        let state = self.state.lock().unwrap();
         let sample = state.receiver.as_ref().unwrap().recv().unwrap();
-        gst::error!(CAT, imp: self, "GOT SAMPLE {:?}", sample);
+        gst::info!(CAT, imp: self, "GOT SAMPLE {:?}", sample);
 
         // CMSampleBufferRef sbuf;
         //  CVImageBufferRef image_buf;
@@ -338,25 +337,22 @@ impl PushSrcImpl for ScreenCaptureSrc {
         //  return GST_FLOW_OK;
         //
         //
-
-        let mut buf = unsafe {
-            let b = gst_core_media_buffer_new(sample.reference);
-            gst::Buffer::from_glib_full(b)
-        };
+        // let buf = unsafe {V
+        //     let pixelbuffer = sample.sample_buffer;
+        //     let b = gst_core_media_buffer_new(pixelbuffer);
+        //     gst::Buffer::from_glib_full(b)
+        // };
 
         {
-            let buf = buf.get_mut().unwrap();
-            buf.set_pts(ClockTime::from_nseconds(
-                sample.presentation_timestamp.value as u64,
-            ));
+            // let buf = buf.get_mut().unwrap();
+            // buf.set_pts(ClockTime::from_nseconds(
+            //     sample.presentation_timestamp.value as u64,
+            // ));
         };
 
-        gst::error!(CAT, imp: self, "BUFFER {:?}", buf);
-        Ok(CreateSuccess::NewBuffer(buf))
+        // gst::info!(CAT, imp: self, "BUFFER {:?}", buf);
+        // Ok(CreateSuccess::NewBuffer(buf))
+        Ok(CreateSuccess::FilledBuffer)
     }
 }
 
-extern "C" {
-    fn gst_core_media_buffer_new(sample_buf: *mut CMSampleBufferRef) -> *const gst::ffi::GstBuffer;
-    fn gst_apple_core_video_memory_init();
-}

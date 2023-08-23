@@ -1,26 +1,3 @@
-/* GStreamer Apple Core Video memory
- * Copyright (C) 2015 Ilya Konstantinov
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for mordetails.
- *
- * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
- */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "corevideomemory.h"
 
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_APPLE_CORE_VIDEO_MEMORY);
@@ -71,7 +48,7 @@ gst_apple_core_video_pixel_buffer_unref (GstAppleCoreVideoPixelBuffer * gpixbuf)
           ("%p: CVPixelBuffer memory still locked (lock_count = %d), likely forgot to unmap GstAppleCoreVideoMemory",
           gpixbuf, gpixbuf->lock_count);
     }
-   // CVPixelBufferRelease (gpixbuf->buf);
+    CVPixelBufferRelease (gpixbuf->buf);
     g_mutex_clear (&gpixbuf->mutex);
     g_slice_free (GstAppleCoreVideoPixelBuffer, gpixbuf);
   }

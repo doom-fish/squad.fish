@@ -12,7 +12,7 @@ use screencapturekit::sc_sys::rc::Object;
 
 use super::allocator::APPLE_VIDEO_ALLOCATOR_NAME;
 
-type CVPixelBufferRef = *mut Object;
+pub type CVPixelBufferRef = *mut Object;
 #[derive(Default, Debug)]
 #[repr(C)]
 pub struct AppleVideoMemory {

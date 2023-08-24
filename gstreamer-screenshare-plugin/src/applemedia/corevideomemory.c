@@ -292,7 +292,7 @@ gst_apple_core_video_memory_new (GstMemoryFlags flags, GstMemory * parent,
       GST_ALLOCATOR_CAST (_apple_core_video_allocator), parent, maxsize, align,
       offset, size);
 
-  mem->gpixbuf = gst_apple_core_video_pixel_buffer_ref (gpixbuf);
+  mem->gpixbuf = gst_apple_core_video_pixel_buffer_ref (gpixbuf
   mem->plane = plane;
 
   GST_DEBUG ("%p: gpixbuf %p, plane: %" G_GSSIZE_FORMAT ", size %"

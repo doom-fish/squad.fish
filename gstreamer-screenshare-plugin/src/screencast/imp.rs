@@ -9,12 +9,13 @@ use gst_base::subclass::prelude::*;
 
 use gst_video::VideoFormat;
 use once_cell::sync::Lazy;
+use screencapturekit::cm_sample_buffer::CMSampleBuffer;
 use screencapturekit::sc_content_filter::SCContentFilter;
 use screencapturekit::sc_error_handler::StreamErrorHandler;
-use screencapturekit::sc_output_handler::{StreamOutput,  CMSampleBuffer, SCStreamOutputType};
+use screencapturekit::sc_output_handler::{SCStreamOutputType, StreamOutput};
 use screencapturekit::sc_shareable_content::SCShareableContent;
 use screencapturekit::sc_stream::SCStream;
-use screencapturekit::sc_stream_configuration::{SCStreamConfiguration, PixelFormat};
+use screencapturekit::sc_stream_configuration::{PixelFormat, SCStreamConfiguration};
 static CAT: Lazy<gst::DebugCategory> = Lazy::new(|| {
     gst::DebugCategory::new(
         "screencapture",
@@ -90,7 +91,11 @@ impl ObjectSubclass for ScreenCaptureSrc {
 }
 
 impl StreamOutput for StreamProducer {
-    fn did_output_sample_buffer(&self, sample_buffer: CMSampleBuffer, _of_type: SCStreamOutputType) {
+    fn did_output_sample_buffer(
+        &self,
+        sample_buffer: CMSampleBuffer,
+        _of_type: SCStreamOutputType,
+    ) {
         let _ = self.sender.send(sample_buffer).map_err(|_| {
             error_msg!(
                 gst::ResourceError::Failed,
@@ -355,4 +360,3 @@ impl PushSrcImpl for ScreenCaptureSrc {
         Ok(CreateSuccess::FilledBuffer)
     }
 }
-

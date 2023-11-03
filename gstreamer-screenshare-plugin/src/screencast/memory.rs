@@ -1,4 +1,4 @@
-use std::{ptr, sync::Arc};
+use std::ptr;
 
 use gst::{
     ffi::{gst_memory_init, GstMemory, GST_MEMORY_FLAG_READONLY},
@@ -8,29 +8,18 @@ use gst::{
     },
     Allocator, Memory,
 };
-use screencapturekit::sc_sys::rc::Object;
+use screencapturekit::cm_sample_buffer::CMSampleBuffer;
 
 use super::allocator::APPLE_VIDEO_ALLOCATOR_NAME;
 
-pub type CVPixelBufferRef = *mut Object;
-#[derive(Default, Debug)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct AppleVideoMemory {
     pub(crate) mem: Option<gst::ffi::GstMemory>,
-    pub(crate) pxbuf: Option<CVPixelBufferRef>,
-    pub(crate) plane: usize,
+    pub(crate) cm_sample_buf: CMSampleBuffer,
+    pub(crate) plane_index: u64,
 }
 
-extern "C" {
-    fn CVPixelBufferIsPlanar(pxbuf: CVPixelBufferRef) -> bool;
-    fn CVPixelBufferGetBaseAddressOfPlane(pxbuf: CVPixelBufferRef, plane: usize) -> gpointer;
-    fn CVPixelBufferGetBaseAddress(pxbuf: CVPixelBufferRef) -> gpointer;
-    fn CVPixelBufferLockBaseAddress(pxbuf: CVPixelBufferRef, lock_flags: u64) -> i32;
-    fn CVPixelBufferUnlockBaseAddress(pxbuf: CVPixelBufferRef, lock_flags: u64) -> i32;
-}
-
-const CVPIXEL_BUFFER_LOCK_READ_ONLY: u64 = 0x00000001;
-const CVRETURN_SUCCESS: i32 = 0;
 
 pub(crate) unsafe extern "C" fn mem_map(
     mem: *mut GstMemory,
@@ -38,23 +27,19 @@ pub(crate) unsafe extern "C" fn mem_map(
     _flags: u32,
 ) -> gpointer {
     let gmem = ptr::read(mem as *mut AppleVideoMemory);
-    if let Some(pxbuf) = gmem.pxbuf {
-        if CVPixelBufferLockBaseAddress(pxbuf, CVPIXEL_BUFFER_LOCK_READ_ONLY) == CVRETURN_SUCCESS {
-            return if CVPixelBufferIsPlanar(pxbuf) {
-                CVPixelBufferGetBaseAddressOfPlane(pxbuf, gmem.plane)
-            } else {
-                CVPixelBufferGetBaseAddress(pxbuf)
-            };
-        }
+    let pxbuf = gmem.cm_sample_buf.pixel_buffer;
+    if pxbuf.lock() {
+        return if pxbuf.is_planar {
+            pxbuf.get_base_adress_of_plane(gmem.plane_index)
+        } else {
+            pxbuf.get_base_adress()
+        };
     }
     ptr::null_mut()
 }
 pub(crate) unsafe extern "C" fn mem_unmap(mem: *mut GstMemory) {
     let gmem = ptr::read(mem as *mut AppleVideoMemory);
-    if let Some(pxbuf) = gmem.pxbuf {
-        CVPixelBufferUnlockBaseAddress(pxbuf, CVPIXEL_BUFFER_LOCK_READ_ONLY);
-    } else {
-    }
+    gmem.cm_sample_buf.pixel_buffer.unlock();
 }
 pub(crate) unsafe extern "C" fn mem_share(
     _mem: *mut GstMemory,
@@ -72,14 +57,16 @@ pub(crate) unsafe extern "C" fn mem_is_span(
 }
 
 impl AppleVideoMemory {
-    pub fn new_wrapped(pxbuf: CVPixelBufferRef, plane: usize, size: usize) -> Memory {
+    #[allow(dead_code)]
+    pub fn new_wrapped(cm_sample_buf: CMSampleBuffer, plane_index: u64, size: usize) -> Memory {
         let allocator = Allocator::find(Some(APPLE_VIDEO_ALLOCATOR_NAME))
             .expect("Should have registerd apple video allocator");
 
-        let mem: &mut AppleVideoMemory = Box::leak(Box::default());
-
-        mem.pxbuf = Some(pxbuf);
-        mem.plane = plane;
+        let mem = Box::leak(Box::new(AppleVideoMemory {
+            cm_sample_buf,
+            plane_index,
+            mem: None,
+        }));
 
         let mem_ptr = mem as *mut _ as *mut GstMemory;
 

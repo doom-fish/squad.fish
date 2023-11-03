@@ -80,13 +80,14 @@ impl Default for AppleVideoAllocator {
 mod tests {
     #![allow(clippy::fn_address_comparisons)]
     use std::ptr;
-    use std::sync::Arc;
 
     use gst::glib::translate::ToGlibPtr;
     use gst::{
         ffi::{GstAllocator, GST_ALLOCATOR_FLAG_CUSTOM_ALLOC},
         prelude::Cast,
     };
+    use screencapturekit::cm_sample_buffer::CMSampleBuffer;
+    use screencapturekit::sc_types::rc::Id;
 
     use crate::screencast::memory::{self, AppleVideoMemory};
 
@@ -123,7 +124,13 @@ mod tests {
     fn core_video_memory_test_memory_with_allocator() {
         gst::init().expect("should work!");
         AppleVideoAllocator::register();
-        let mem = AppleVideoMemory::new_wrapped(Arc::from(ptr::null_mut()), 1, 100);
-        let _ = mem.map_readable();
+        unsafe {
+            let mem = AppleVideoMemory::new_wrapped(
+                CMSampleBuffer::new(Id::from_ptr(ptr::null_mut())),
+                1,
+                100,
+            );
+            let _ = mem.map_readable();
+        }
     }
 }

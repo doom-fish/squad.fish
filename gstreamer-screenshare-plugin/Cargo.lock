@@ -18,12 +18,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic_refcell"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41e67cd8309bbd06cd603a9e693a784ac2e5d1e955f11286e355089fcab3047c"
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -238,11 +232,12 @@ dependencies = [
 
 [[package]]
 name = "gst-plugin-version-helper"
-version = "0.7.5"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87921209945e5dc809848a100115fad65bd127671896f0206f45e272080cc4c9"
+checksum = "334c37a15ca23861ad8159c8ff6e20f011aa2000defc5c9159096a28842f811b"
 dependencies = [
  "chrono",
+ "toml_edit",
 ]
 
 [[package]]
@@ -267,33 +262,6 @@ dependencies = [
  "pretty-hex",
  "smallvec",
  "thiserror",
-]
-
-[[package]]
-name = "gstreamer-base"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fe38a6d5c1e516ce3fd6069e972a540d315448ed69fdadad739e6c6c6eb2a01"
-dependencies = [
- "atomic_refcell",
- "cfg-if",
- "glib",
- "gstreamer",
- "gstreamer-base-sys",
- "libc",
-]
-
-[[package]]
-name = "gstreamer-base-sys"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4ca701f9078fe115b29b24c80910b577f9cb5b039182f050dbadf5933594b64"
-dependencies = [
- "glib-sys",
- "gobject-sys",
- "gstreamer-sys",
- "libc",
- "system-deps",
 ]
 
 [[package]]
@@ -326,10 +294,7 @@ version = "0.0.1"
 dependencies = [
  "gst-plugin-version-helper",
  "gstreamer",
- "gstreamer-base",
  "gstreamer-check",
- "gstreamer-video",
- "once_cell",
  "screencapturekit",
 ]
 
@@ -341,35 +306,6 @@ checksum = "f86bf9de67a6ab7af67ac11588f4939e984a936030437219f269fe969d79ad8c"
 dependencies = [
  "glib-sys",
  "gobject-sys",
- "libc",
- "system-deps",
-]
-
-[[package]]
-name = "gstreamer-video"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01b4d3141362b3d44a684e697d2bc55fea73d023315449cda83f0f4324531d64"
-dependencies = [
- "cfg-if",
- "futures-channel",
- "glib",
- "gstreamer",
- "gstreamer-base",
- "gstreamer-video-sys",
- "libc",
-]
-
-[[package]]
-name = "gstreamer-video-sys"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09cdc36baab839921b05d2468524da649f373dccc5f966c75e564029dc135b1c"
-dependencies = [
- "glib-sys",
- "gobject-sys",
- "gstreamer-base-sys",
- "gstreamer-sys",
  "libc",
  "system-deps",
 ]

@@ -1,6 +1,0 @@
-[submodule "screencapturekit-rs"]
-	path = screencapturekit-rs
-	url = https://github.com/svtlabs/screencapturekit-rs.git
-[submodule "Gstreamer-ScreenCaptureKit-Plugin"]
-	path = Gstreamer-ScreenCaptureKit-Plugin
-	url = git@github.com:svtlabs/Gstreamer-ScreenCaptureKit-Plugin.git

@@ -34,3 +34,8 @@ dist-ssr
 *.sw?
 
 
+
+
+# Added by cargo
+
+/target

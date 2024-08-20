@@ -1,0 +1,17 @@
+[package]
+name = "ui"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/ui.rs"
+
+[dependencies]
+ui.workspace = true
+gpui.workspace = true
+derive_more.workspace = true
+
+
+[lints]
+workspace = true

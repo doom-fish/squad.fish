@@ -1,0 +1,26 @@
+[package]
+name = "com"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+
+[lib]
+path = "src/com.rs"
+
+
+[lints]
+workspace = true
+
+[dependencies]
+byte-slice-cast.workspace = true
+derive_more.workspace = true
+
+gst.workspace = true
+gst-app.workspace = true
+gst-base.workspace = true
+gst-audio.workspace = true
+gst-video.workspace = true
+
+[build-dependencies]
+pkg-config = "0.3"

@@ -1,14 +1,55 @@
-[package]
-name = "squad-fish"
+[workspace]
+resolver = "2"
+members = ["app", "workspace", "ui", "theme", "com"]
+
+[workspace.package]
+authors = ["Per Johansson <per@doom.fish>"]
 version = "0.1.0"
 edition = "2021"
-# Enable a small amount of optimization in debug mode
+license = "MIT OR Apache-2.0"
+
+[workspace.lints.clippy]
+all = "warn"
+
+[workspace.dependencies]
+# Zed
+gpui = { git = "https://github.com/zed-industries/zed" }
+refineable = { git = "https://github.com/zed-industries/zed" }
+ui = { git = "https://github.com/zed-industries/zed" }
+derive_more = { version = "1", features = [
+  "deref",
+  "display",
+  "error",
+  "deref_mut",
+] }
+serde = { version = "1", features = ["derive"] }
+# External
+hex = "0.4"
+toml = { version = "0.8" }
+serde_yml = { version = "0.0.12" }
+palette = { version = "0.7", features = ["serializing"] }
+# gstreamer
+gst = { package = "gstreamer", version = "0.23" }
+gst-app = { package = "gstreamer-app", version = "0.23" }
+gst-base = { package = "gstreamer-base", version = "0.23" }
+gst-video = { package = "gstreamer-video", version = "0.23" }
+gst-audio = { package = "gstreamer-audio", version = "0.23" }
+
+byte-slice-cast = "1"
+
+# crate
+theme = { path = "theme" }
+app = { path = "app" }
+com = { path = "com" }
+workspace = { path = "workspace" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = "z"
+strip = true
+
 [profile.dev]
-opt-level = 1
-
-# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
-[profile.dev.package."*"]
-opt-level = 3
-
-[dependencies]
-bevy = { version = "0.13", features = ["dynamic_linking"] }
+debug = 0
+# gstreamer

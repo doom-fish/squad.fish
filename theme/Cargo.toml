@@ -1,0 +1,21 @@
+[package]
+name = "theme"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/theme.rs"
+
+[dependencies]
+ui.workspace = true
+gpui.workspace = true
+refineable.workspace = true
+derive_more.workspace = true
+palette.workspace = true
+serde.workspace = true
+hex.workspace = true
+serde_yml.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,18 @@
+name: Default
+colors:
+  text_color: rgb(255,1,1)
+  background_color: "oklch(0.70, 0.1, 138)"
+  primary_color: "#6200EE"
+  secondary_color: "#03DAC6"
+  accent_color: "#000000"
+  error_color: "#B00020"
+  success_color: "#00C853"
+  warning_color: "#FFAB00"
+  disabled_color: "#000000"
+  border_color: "#000000"
+typography:
+  family: Roboto
+  features: {}
+  fallbacks: null
+  weight: 400.0
+  style: Normal

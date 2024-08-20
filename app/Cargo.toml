@@ -1,0 +1,17 @@
+[package]
+name = "app"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ui.workspace = true
+gpui.workspace = true
+serde.workspace = true
+serde_yml.workspace = true
+
+com.workspace = true
+theme.workspace = true
+
+[lints]
+workspace = true

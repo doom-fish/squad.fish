@@ -1,0 +1,18 @@
+[package]
+name = "workspace"
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/workspace.rs"
+
+[dependencies]
+# Zed
+ui.workspace = true
+gpui.workspace = true
+
+
+# Additional
+[lints]
+workspace = true
